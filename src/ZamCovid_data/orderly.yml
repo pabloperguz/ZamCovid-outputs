@@ -1,0 +1,22 @@
+script: script.R
+
+artefacts:
+  - data:
+      description: Data to fit the model
+      filenames:
+        - data_timeseries.csv
+
+global_resources:
+  util.R: util.R
+
+packages:
+  - dplyr
+  - tidyr
+
+resources:
+  - data/kabwe_seroprevalence.csv
+  - data/kabwe_all_deaths.csv
+  - data/kabwe_cases.csv
+
+requester: ZamCovid
+author: Pablo
