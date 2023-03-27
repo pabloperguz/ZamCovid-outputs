@@ -16,3 +16,13 @@ cols_pcr <- c(paste0("pcr_positive_", pcr_age_bands))
 data[which(as.Date(data$date) < "2021-01-01"), cols_pcr] <- NA_integer_
 
 write.csv(data, "data_timeseries.csv", row.names = FALSE)
+
+
+
+cases <- readxl::read_excel("data/Data sets.xlsx", sheet = "COVID-19 Cases") %>%
+  `colnames<-`(tolower(gsub(" ", "_", colnames(.))))
+
+cases1 <- cases %>%
+  select(date = date_specimen_collected, age, locality) %>%
+  filter(!is.na(date), !is.na(age)) %>%
+  mutate(locality = tolower(gsub(" ", "_", locality)))
