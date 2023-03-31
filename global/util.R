@@ -62,6 +62,11 @@ switch_levels <- function(x) {
 }
 
 
-spimalot_file <- function(path) {
-  system.file(path, package = "spimalot", mustWork = TRUE)
+version_check <- function(package, version) {
+  if (packageVersion(package) < version) {
+    stop(sprintf(
+      paste("Please update %s with:",
+            "remotes::install_github(pabloperguz/'%s')"),
+      package, package))
+  }
 }

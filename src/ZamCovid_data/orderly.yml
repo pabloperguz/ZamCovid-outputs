@@ -5,13 +5,23 @@ artefacts:
       description: Data to fit the model
       filenames:
         - data_timeseries.csv
+  - staticgraph:
+      description: Visualise data to fit
+      filenames:
+        - data_to_fit.png
 
+sources:
+  - support.R
+  
 global_resources:
   util.R: util.R
 
 packages:
   - dplyr
   - tidyr
+  - ggplot2
+  - stringr
+  - patchwork
 
 resources:
   - data/kabwe_seroprevalence.csv

@@ -1,28 +1,26 @@
 source("util.R")
 
-end_date <- "2021-12-31"
+start_date <- as.Date("2020-01-01")
+end_date <- as.Date("2021-12-31")
 
 ## 1. Aggregate all data into time series
-deaths <- read_csv("data/kabwe_all_deaths.csv")
-serology <- read_csv("data/kabwe_seroprevalence.csv")
-cases <- read_csv("data/kabwe_cases.csv")
+deaths <- read_csv("data/kabwe_all_deaths.csv") %>% mutate(date = as.Date(date))
+serology <- read_csv("data/kabwe_seroprevalence.csv") %>% mutate(date = as.Date(date))
+cases <- read_csv("data/kabwe_cases.csv") %>% mutate(date = as.Date(date))
 
-# Only keep data up to 2021-12-31
-# Ignore PCR data before 2021 as official policy for testing was different
-data <- data %>%
-  filter(as.Date(date) <= as.Date(end_date))
-
-cols_pcr <- c(paste0("pcr_positive_", pcr_age_bands))
-data[which(as.Date(data$date) < "2021-01-01"), cols_pcr] <- NA_integer_
+## Data will run from 2020-01-01 to 2021-12-31
+# Note that:
+# - Serology is weekly
+# - PCR data is ignored before 2021, as official policy for testing was different
+# - Deaths are "ALL DEATHS", not just Covid-19
+data <- data.frame(date = seq.Date(start_date, end_date, "day")) %>%
+  left_join(., serology, by = "date") %>%
+  left_join(., cases, by = "date") %>%
+  left_join(., deaths, by = "date")
 
 write.csv(data, "data_timeseries.csv", row.names = FALSE)
 
 
-
-cases <- readxl::read_excel("data/Data sets.xlsx", sheet = "COVID-19 Cases") %>%
-  `colnames<-`(tolower(gsub(" ", "_", colnames(.))))
-
-cases1 <- cases %>%
-  select(date = date_specimen_collected, age, locality) %>%
-  filter(!is.na(date), !is.na(age)) %>%
-  mutate(locality = tolower(gsub(" ", "_", locality)))
+png("data_to_fit.png", units = "in", width = 14, height = 10, res = 300)
+plot_data(data)
+dev.off()
