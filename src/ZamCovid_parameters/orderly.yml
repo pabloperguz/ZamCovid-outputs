@@ -1,6 +1,9 @@
 script: script.R
 
 parameters:
+  date: ~
+  deterministic:
+    default: false
   assumptions:
     default: "central"
   
@@ -37,7 +40,8 @@ resources:
   - data/vaccine_uptake.csv
   - data/support_severity.csv
   - data/data_vaccination.csv
-  - data/weighted_prior_ranges.csv
+  - data/population.csv
+  - data/progression_data.csv
 
 requester: ZamCovid
 author: Pablo

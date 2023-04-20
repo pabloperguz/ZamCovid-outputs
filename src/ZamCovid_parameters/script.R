@@ -3,25 +3,21 @@ source("util.R")
 version_check("ZamCovid", "0.1.0")
 
 ## Define date at which the data is capped for analysis
-date <- "2021-12-01"
+date <- date
 
-## Regions: at the moment we only have Kabwe data, but we will get data for
-## other districts soon
+## Regions: at the moment we only have Kabwe
 regions <- c("kabwe")
 
 ## After starting with a model without vaccination
 ## * early December 2020: vaccination starts, expand vaccine classes 
-epoch_dates <- c("2020-12-07")
+epoch_dates <- c("2020-12-05")
 
 ## Load all parameters from the last run; creates priors, and updates
 ## new entries into the proposal matrix as needed.
 pars <- load_mcmc_parameters(assumptions, deterministic)
 
-## The baselines are always region-specific
-regions <- sircovid::regions("england")
-
 baseline <- lapply(regions, create_baseline, date, 
-                   epoch_dates, pars$info, assumptions)
+                   epoch_dates, pars, assumptions)
 names(baseline) <- regions
 
 message("Writing parameters_info.csv")

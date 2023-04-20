@@ -1,39 +1,4 @@
 create_priors <- function(pars_info) {
-  ##### derive priors for hospital progression
-  regional_ps <- read_csv("data/weighted_prior_ranges.csv")
-  regions <- c(sircovid::regions("england"), "england")
-  
-  regional_ps[regional_ps$param == "p_ICU", "mean"] <-
-    0.5 * regional_ps[regional_ps$param == "p_ICU", "mean"]
-  
-  regional_ps <- regional_ps %>%
-    dplyr::filter(region == "england") %>%
-    dplyr::select(param, mean) %>%
-    mutate(mean = as.numeric(mean))
-  
-  # Named vector of prior ranges for hospitalisation parameters
-  ps_to_lower <- data.frame(
-    param = c("p_ICU", "p_H_D", "p_ICU_D",
-              "p_W_D", "p_G_D", "p_H", "p_H_2"),
-    to_lower = c(0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.3)
-  )
-  
-  regional_ps <- regional_ps %>%
-    dplyr::inner_join(ps_to_lower)
-  
-  p_hps <- signif(mapply(FUN = fit_beta,
-                         mean = regional_ps$mean,
-                         lower = regional_ps$mean - regional_ps$to_lower,
-                         ci = 0.95))
-  p_hps <- as.data.frame(t(p_hps))
-  colnames(p_hps) <- c("shape1","shape2")
-  regional_ps <- cbind(regional_ps,p_hps)
-  
-  regional_ps <- 
-    do.call("rbind", replicate(length(regions), regional_ps, simplify = FALSE))
-  regional_ps <- regional_ps %>% 
-    mutate(region = rep(regions, each = nrow(p_hps))) %>%
-    dplyr::select(par = "param", region, mean, shape1, shape2)
   
   ### set beta_priors
   beta_hps <- data.frame(
@@ -64,47 +29,30 @@ create_priors <- function(pars_info) {
                                    ci = 0.95)
   beta_hps["beta3", "scale"] <- beta_hps["beta3", "scale"] * R0_fac
   
-  ## Between beta3 and beta18 we use the same prior distribution
-  ## After beta19 we use the same prior distribution
+  ## After beta3 we use the same prior distribution
   beta_hps <-
-    beta_hps[c("beta1", "beta2", rep("beta3", 34)), ]
+    beta_hps[c("beta1", "beta2", rep("beta3", 8)), ]
   rownames(beta_hps) <- paste0("beta", seq_len(nrow(beta_hps)))
   beta_names <- rownames(beta_hps)
   
-  pars <- c(beta_names, unique(regional_ps$par))
   
-  hps <- matrix(NA, nrow = length(pars), ncol = 7,
-                dimnames = list(pars, c("par", "region", "scale", "shape",
+  ## Make data frame of all parameters to fit
+  hps <- matrix(NA, nrow = length(beta_names), ncol = 7,
+                dimnames = list(beta_names, c("par", "region", "scale", "shape",
                                         "shape1", "shape2", "correlation")))
   hps <- as.data.frame(hps)
-  hps$par <- pars
-  hps$region <- "england"
+  hps$par <- beta_names
+  hps$region <- "kabwe"
   hps[beta_names, colnames(beta_hps)] <- beta_hps
-  hps[unique(regional_ps$par), c("shape1", "shape2")] <- as.matrix(p_hps)
-  
-  pillar2_age_bands <- c("15_24", "25_49", "50_64", "65_79", "80_plus")
-  
-  ### add regional ps
-  suppressMessages(
-    hps <- hps %>%
-      dplyr::full_join(regional_ps))
   
   ret <- priors_wide_to_long(hps)
   
-  par <- c("rho_pillar2_tests", "alpha_H", "alpha_admission", "alpha_D",
-           "alpha_death_hosp", "mu_D", "mu_D_2", "mu_D_3", "mu_D_4", "mu_D_5",
-           "p_ICU_2", "p_H", "p_H_2", "p_G_D", "p_G_D_2", "mu_gamma_H", "mu_gamma_H_2",
-           "mu_gamma_H_3", "mu_gamma_H_4", "seed_date_alpha", "ta_alpha",
-           "seed_date_delta", "ta_delta", "seed_date_omicron", "ta_omicron",
-           "rel_p_H_alpha", "rel_p_H_delta", "rel_p_ICU_alpha",
-           "rel_p_ICU_delta", "rel_p_D_alpha", "rel_p_D_delta",
-           "rel_p_H_omicron", "rel_p_ICU_omicron", "rel_p_D_omicron",
-           paste0("p_NC_", pillar2_age_bands),
-           paste0("p_NC_weekend_", pillar2_age_bands))
-  
-  if (assumptions == "mu_d_summer") {
-    par <- c(par, "mu_D_6")
-  }
+  par <- c("p_G_D")
+  # We will zero the probabilities of going into hospital for now as there are
+  # no reliable sources of hospitalisation data. Fitted p_G_D will reflect
+  # overall probability of death by mechanistically assuming all deaths
+  # happen outside of hospital. This simplifies things, as we do not have
+  # to make any wild assumptions around p_H or p_H_D in relation to p_G_D!
   
   extra_uniform <-
     expand.grid(region = regions,
@@ -211,7 +159,7 @@ priors_wide_to_long <- function(d) {
   d <- d[c("region", "type", tr)]
   
   extra <- data.frame(
-    region = "england",
+    region = "kabwe",
     type = "null",
     name = "start_date",
     gamma_scale = NA_real_,
