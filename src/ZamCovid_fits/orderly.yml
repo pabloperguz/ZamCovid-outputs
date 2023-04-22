@@ -1,0 +1,58 @@
+script: script.R
+## assumptions - Different assumptions used are central/pessimistic/optimistic scenarios. 
+
+parameters:
+    region: ~
+    date: ~
+    deterministic:
+      default: false
+    short_run:
+      default: false
+    assumptions:
+      default: "central"
+
+artefacts:
+  - staticgraph:
+      description: pMCMC trace plots and fitted trajectories
+      filenames:
+        - plots/pmcmc_traceplots.png
+        - plots/fits_serology.png
+        - plots/fits_deaths.png
+  - data:
+      description: PMCMC results for analysis
+      filenames:
+        - outputs/fit.rds
+        - outputs/info.csv
+        - outputs/proposal.csv
+
+global_resources:
+  util.R: util.R
+
+sources:
+  - support.R
+  - fit_process.R
+  - plot.R
+  
+packages:
+  - ZamCovid
+  - dplyr
+  - tidyr
+  - ggplot2
+
+depends:
+  ZamCovid_data:
+    id: latest
+    use:
+      data/data_timeseries.csv: data_timeseries.csv
+
+  ZamCovid_parameters:
+    id: latest(parameter:assumptions == assumptions && date == date && deterministic == deterministic)
+    use:
+      inputs/base.rds: parameters_base.rds
+      inputs/info.csv: parameters_info.csv
+      inputs/prior.csv: parameters_prior.csv
+      inputs/proposal.csv: parameters_proposal.csv
+      inputs/transform.R: parameters_transform.R
+
+requester: ZamCovid
+author: Pablo
