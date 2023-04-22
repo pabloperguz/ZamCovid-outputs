@@ -76,11 +76,13 @@ rm(list = setdiff(ls(), env_keep))
 orderly::orderly_run("ZamCovid_fits",
                      parameters = list(region = "kabwe",
                                        date = date,
-                                       short_run = short_run,
-                                       assumptions = assumptions),
+                                       short_run = FALSE,
+                                       assumptions = assumptions,
+                                       deterministic = deterministic),
                      use_draft = "newer")
 rm(list = setdiff(ls(), env_keep))
 
 #----
 
-# 1. Data to fit
+# To remove failed tasks from draft folder
+orderly::orderly_cleanup(failed_only = TRUE)

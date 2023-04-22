@@ -3,7 +3,7 @@ version_check("ZamCovid", "0.1.0")
 
 
 ## 1. Prepare elements of particle filter
-pars <- fit_pars_load("parameters", region, assumptions,
+pars <- fit_pars_load("inputs", region, assumptions,
                       short_run, deterministic)
 
 control <- set_control(short_run, deterministic)
@@ -23,28 +23,23 @@ samples <- fit_run(pars, filter, control$pmcmc)
 
 
 ## 3. Post-processing of model fits ----
-# dat <- ZamCovid_fit_process(samples, pars, data_full, data_fit)
+dat <- ZamCovid_fit_process(samples, pars, data_full, data_fit)
 
 dir.create("outputs", FALSE, TRUE)
 saveRDS(dat, "outputs/fit.rds")
+write_csv(dat$fit$parameters$info, "outputs/info.csv")
+write_csv(dat$fit$parameters$proposal, "outputs/proposal.csv")
 
+dir.create("plots", FALSE, TRUE)
 message("Creating plots")
-png("outputs/pmcmc_traceplots.png", units = "in", width = 8, height = 8, res = 300)
+png("plots/pmcmc_traceplots.png", units = "in", width = 10, height = 6, res = 300)
 plot_fit_traces(samples)
 dev.off()
-  
-png("outputs/fits_serology.png", units = "in", width = 16, height = 10, res = 300)
+
+png("plots/fits_serology.png", units = "in", width = 10, height = 6, res = 300)
 plot_serology(samples, data_fit)
 dev.off()
 
-png("outputs/fits_deaths.png", units = "in", width = 16, height = 10, res = 300)
-
+png("plots/fits_deaths.png", units = "in", width = 10, height = 6, res = 300)
+plot_deaths(samples, data_fit, age = FALSE)
 dev.off()
-
-
-tmp <- samples$trajectories$state
-tmp_d <- tmp[grep("D_", rownames(tmp)), , ]
-plot(colMeans(as.data.frame(tmp_d[1, , -1L])), type = "l", 
-     ylab = "Deaths")
-lines(colMeans(as.data.frame(tmp[16, , -1L])), col = "red")
-rownames(tmp)

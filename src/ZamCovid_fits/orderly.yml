@@ -15,12 +15,15 @@ artefacts:
   - staticgraph:
       description: pMCMC trace plots and fitted trajectories
       filenames:
-        - outputs/pmcmc_traceplots.png
-        - outputs/fitted_trajectories.png
+        - plots/pmcmc_traceplots.png
+        - plots/fits_serology.png
+        - plots/fits_deaths.png
   - data:
       description: PMCMC results for analysis
       filenames:
         - outputs/fit.rds
+        - outputs/info.csv
+        - outputs/proposal.csv
 
 global_resources:
   util.R: util.R
@@ -32,6 +35,7 @@ sources:
   
 packages:
   - ZamCovid
+  - dplyr
   - tidyr
   - ggplot2
 
@@ -44,11 +48,11 @@ depends:
   ZamCovid_parameters:
     id: latest(parameter:assumptions == assumptions && date == date && deterministic == deterministic)
     use:
-      parameters/base.rds: parameters_base.rds
-      parameters/info.csv: parameters_info.csv
-      parameters/prior.csv: parameters_prior.csv
-      parameters/proposal.csv: parameters_proposal.csv
-      parameters/transform.R: parameters_transform.R
+      inputs/base.rds: parameters_base.rds
+      inputs/info.csv: parameters_info.csv
+      inputs/prior.csv: parameters_prior.csv
+      inputs/proposal.csv: parameters_proposal.csv
+      inputs/transform.R: parameters_transform.R
 
 requester: ZamCovid
 author: Pablo

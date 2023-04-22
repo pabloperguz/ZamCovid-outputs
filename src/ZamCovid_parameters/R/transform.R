@@ -5,7 +5,6 @@ compute_severity <- function(pars, severity_data) {
   
   # Overall probability of death (mechanistically of dying outside hospital)
   p_G_D_value <- p_G_D
-  browser()
   
   # Simplifying assumptions
   p_star_value <- 0.1 # Probability of being admitted with positive PCR

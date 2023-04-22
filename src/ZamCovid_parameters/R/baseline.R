@@ -25,6 +25,20 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions) {
   population <- read_csv("data/population.csv")[, c("age", region)] %>%
     `colnames<-`(., c("age", "n"))
   
+  if (region == "kabwe") {
+    # This is a hack!!!
+    # We don't have population breakdown from Kabwe!
+    # n corresponds to national population from 2018, at a point the population
+    # in Kabwe District was reported to be 230,802
+    
+    # New 2022 census indicates a national population of 19,610,769
+    # We'll assume the same growth for Kabwe and same age distribution
+    n_zambia <- 19610769
+    g <-  n_zambia / sum(population$n)
+    n_kabwe <- ceiling(230802 * g)
+    population$n <- round((population$n / sum(population$n)) * n_kabwe)
+  }
+  
   ## 3. Set-up basic model parameters ----
   # Beta change points - A vector of date (strings) for the beta parameters.
   # We are agnostic as to the effect of official NPI dates at specific dates

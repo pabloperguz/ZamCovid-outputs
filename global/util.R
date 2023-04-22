@@ -70,3 +70,7 @@ version_check <- function(package, version) {
       package, package))
   }
 }
+
+data_frame <- function(...) {
+  data.frame(..., stringsAsFactors = FALSE, check.names = FALSE)
+}

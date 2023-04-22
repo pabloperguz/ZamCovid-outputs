@@ -12,72 +12,70 @@ ZamCovid_fit_process <- function(samples, parameters, data_full, data_fit,
   date <- ZamCovid:::numeric_date_as_date(tail(samples$trajectories$date, 1))
   
   ## The Rt calculation is slow and runs in serial
-  if (Rt) {
-    message("Computing Rt")
-    rt <- calculate_ZamCovid_Rt(samples, TRUE)
-  } else {
-    rt <- NULL
-  }
-  
-  browser()
-  ## Output simulate object
-  if (simulate) {
-    message("Preparing onward simulation object")
-    simulate <- create_simulate_object(samples, date, samples$info$date)
-  } else {
-    simulate <- NULL
-  }
-  
-  
-  ## Extract demography
-  if (severity) {
-    message("Extracting demography")
-    model_demography <- extract_demography(samples)
-    message("Extracting severity outputs")
-    severity <- extract_severity(samples)
-    message("Calculating intrinsic severity")
-    intrinsic_severity <- calculate_intrinsic_severity(samples, parameters$base)
-  } else {
-    model_demography <- NULL
-    severity <- NULL
-    intrinsic_severity <- NULL
-  }
-  
+  # if (Rt) {
+  #   message("Computing Rt")
+  #   rt <- calculate_ZamCovid_Rt(samples, TRUE)
+  # } else {
+  #   rt <- NULL
+  # }
   
   message("Computing parameter MLE and covariance matrix")
   parameters_new <- fit_parameters(samples, parameters)
   
+  
+  ## Output simulate object
+  # if (simulate) {
+  #   message("Preparing onward simulation object")
+  #   simulate <- create_simulate_object(samples, date, samples$info$date)
+  # } else {
+  #   simulate <- NULL
+  # }
+  # 
+  # 
+  # ## Extract demography
+  # if (severity) {
+  #   message("Extracting demography")
+  #   model_demography <- extract_demography(samples)
+  #   message("Extracting severity outputs")
+  #   severity <- extract_severity(samples)
+  #   message("Calculating intrinsic severity")
+  #   intrinsic_severity <- calculate_intrinsic_severity(samples, parameters$base)
+  # } else {
+  #   model_demography <- NULL
+  #   severity <- NULL
+  #   intrinsic_severity <- NULL
+  # }
+  
+  
   ## This can possibly merge in with the initial restart processing if
   ## we're careful now.  We need to have computed Rt first is the only
   ## trick.
-  if (!is.null(restart)) {
-    ## When adding the trajectories, we might as well strip them down
-    ## to the last date in the restart
-    restart_date <- max(restart$state$time)
-    i <- samples$trajectories$date <= restart_date
-    
-    if (Rt) {
-      parent_rt <- rt_filter_time(rt, i, samples$info$multiregion)
-    } else {
-      parent_rt <- NULL
-    }
-    
-    restart$parent <- list(
-      trajectories = trajectories_filter_time(samples$trajectories, i),
-      rt = parent_rt,
-      data = data,
-      prior = parameters$raw$prior)
-  }
-  
+  # if (!is.null(restart)) {
+  #   ## When adding the trajectories, we might as well strip them down
+  #   ## to the last date in the restart
+  #   restart_date <- max(restart$state$time)
+  #   i <- samples$trajectories$date <= restart_date
+  #   
+  #   if (Rt) {
+  #     parent_rt <- rt_filter_time(rt, i, samples$info$multiregion)
+  #   } else {
+  #     parent_rt <- NULL
+  #   }
+  #   
+  #   restart$parent <- list(
+  #     trajectories = trajectories_filter_time(samples$trajectories, i),
+  #     rt = parent_rt,
+  #     data = data,
+  #     prior = parameters$raw$prior)
+  # }
+  # 
   
   list(
     fit = list(samples = samples,
-               rt = rt,
-               severity = severity,
-               intrinsic_severity = intrinsic_severity,
-               simulate = simulate,
+               rt = NULL,
+               severity = NULL,
+               simulate = NULL,
                parameters = parameters_new,
-               model_demography = model_demography,
                data = list(fitted = data_fit, full = data_full)),
     restart = restart)
 }
@@ -665,6 +663,7 @@ extract_age_class_outputs <- function(samples) {
 
 
 fit_parameters <- function(samples, parameters) {
+
   keep <- function(x, region) {
     is.na(x) | x %in% region
   }
@@ -673,73 +672,21 @@ fit_parameters <- function(samples, parameters) {
   info <- parameters$raw$info[keep(parameters$raw$info$region, region), ]
   rownames(info) <- NULL
   
-  ## This will certainly want moving elsewhere, possibly mcstate, as
-  ## it's very fiddly.  There's no good reason it needs to be here
-  ## (see https://github.com/mrc-ide/mcstate/issues/189)
-  if (samples$info$multiregion) {
-    i <- which.max(rowSums(samples$probabilities[, "log_posterior", ]))
-    initial <- samples$pars[i, , ]
-    
-    nms_fixed <- samples$info$pars$fixed
-    nms_varied <- samples$info$pars$varied
-    
-    ## Spreading these back out is pretty nasty; we need to work out
-    ## which are nested and which are not; take the fixed pars from
-    ## the first region, then work out the mapping for the rest.
-    info$key <- paste(info$name, info$region, sep = "\r")
-    info$initial[match(nms_fixed, info$name)] <- unname(initial[nms_fixed, 1])
-    
-    ## Not the fastest, but the clearest...
-    for (r in region) {
-      for (nm in nms_varied) {
-        info$initial[info$region == r & info$name == nm] <- initial[nm, r]
-      }
-    }
-    
-    ## For the covariance we need to split things up carefully:
-    nms_all <- unique(info$name)
-    n_all <- length(nms_all)
-    n_fixed <- length(nms_fixed)
-    n_varied <- length(nms_varied)
-    cov_fixed <- matrix(0, n_fixed, n_all)
-    colnames(cov_fixed) <- nms_all
-    cov_fixed[, nms_fixed] <- cov(samples$pars[, nms_fixed, 1])
-    
-    f <- function(r) {
-      cov_varied <- matrix(0, n_varied, n_all)
-      colnames(cov_varied) <- nms_all
-      cov_varied[, nms_varied] <- cov(samples$pars[, nms_varied, r])
-      cov_varied
-    }
-    cov_varied <- lapply(region, f)
-    
-    covariance <- abind_quiet(c(list(cov_fixed), cov_varied), along = 1)
-    
-    proposal <- data.frame(
-      region = c(rep(NA, n_fixed), rep(region, each = n_varied)),
-      name = c(nms_fixed, rep(nms_varied, length(region))),
-      covariance,
-      stringsAsFactors = FALSE)
-    
-    prior <- parameters$raw$prior[keep(parameters$raw$prior$region, region), ]
-    rownames(prior) <- NULL
-    
-  } else {
-    i <- which.max(samples$probabilities[, "log_posterior"])
-    initial <- samples$pars[i, ]
-    info$initial[match(names(initial), info$name)] <- unname(initial)
-    
-    covariance <- cov(samples$pars)
-    rownames(covariance) <- NULL
-    proposal <- data_frame(region = samples$info$region,
-                           name = colnames(covariance),
-                           covariance)
-    
-    prior <- parameters$prior
-    prior$region <- samples$info$region
-    prior <- prior[, c("region", setdiff(names(prior), "region"))]
-    rownames(prior) <- NULL
-  }
+  i <- which.max(samples$probabilities[, "log_posterior"])
+  initial <- samples$pars[i, ]
+  info$initial[match(names(initial), info$name)] <- unname(initial)
+  
+  covariance <- cov(samples$pars)
+  rownames(covariance) <- NULL
+  proposal <- data_frame(region = samples$info$region,
+                         name = colnames(covariance),
+                         covariance)
+  
+  prior <- parameters$prior
+  prior$region <- samples$info$region
+  prior <- prior[, c("region", setdiff(names(prior), "region"))]
+  rownames(prior) <- NULL
+  
   
   parameters$info <- info
   parameters$prior <- prior
