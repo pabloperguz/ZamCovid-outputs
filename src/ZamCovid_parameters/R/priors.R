@@ -31,7 +31,7 @@ create_priors <- function(pars_info) {
   
   ## After beta3 we use the same prior distribution
   beta_hps <-
-    beta_hps[c("beta1", "beta2", rep("beta3", 8)), ]
+    beta_hps[c("beta1", "beta2", rep("beta3", 25)), ]
   rownames(beta_hps) <- paste0("beta", seq_len(nrow(beta_hps)))
   beta_names <- rownames(beta_hps)
   

@@ -120,7 +120,7 @@ plot_serology <- function(samples, data_fit,
     geom_ribbon(aes(ymin = lb, ymax = ub, fill = state), alpha = 0.4) +
     geom_point(aes(y = data_mean, col = state), size = 0.9, alpha = 0.5) +
     geom_errorbar(aes(ymin = data_lb, ymax = data_ub, 
-                        col = state), size = 0.3, alpha = 0.5) +
+                        col = state), linewidth = 0.3, alpha = 0.5) +
     scale_y_continuous(expand = c(0, 0),
                        limits = c(0, 0.3),
                        labels = scales::percent_format()) +

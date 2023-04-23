@@ -117,9 +117,9 @@ rename_parameter <- function(old_name, new_name,
 }
 
 
-add_beta <- function(beta_name, beta_initial, min, max, proposal,
-                     assumptions = "central", model = "deterministic",
-                     factor = NULL) {
+add_beta <- function(beta_name, beta_initial, min = 0, max = 1,
+                     proposal = NULL, factor = NULL,
+                     assumptions = "central", model = "deterministic") {
   
   info_filename <-
     paste("src/ZamCovid_parameters/pars", assumptions, model,

@@ -44,7 +44,7 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions) {
   # We are agnostic as to the effect of official NPI dates at specific dates
   # This is thus just a vector of monthly dates
   beta_date <- as.character(
-    seq.Date(as.Date("2020-03-01"), as.Date(date), "month"))
+    seq.Date(as.Date("2020-03-01"), as.Date(date), "2 weeks"))
   beta_names <- sprintf("beta%d", seq_along(beta_date))
   
   # Set of parameters that will be fitted for each model type
