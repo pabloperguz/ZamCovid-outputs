@@ -8,6 +8,7 @@ create_priors <- function(pars_info) {
   row.names(beta_hps) <- c("beta1", "beta2", "beta3")
   
   ## beta value that would give R0 = 1
+  ## assumes Wildtype R0 was ~ 2.58 in Zambia
   R0_fac <- 0.0367
   
   ## beta1 aim for 95% CI of [2.5, 3.5]

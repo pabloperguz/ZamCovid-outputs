@@ -74,3 +74,7 @@ version_check <- function(package, version) {
 data_frame <- function(...) {
   data.frame(..., stringsAsFactors = FALSE, check.names = FALSE)
 }
+
+seq_rows <- function(x) {
+  seq_len(nrow(x))
+}

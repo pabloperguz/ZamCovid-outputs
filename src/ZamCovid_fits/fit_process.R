@@ -11,13 +11,13 @@ ZamCovid_fit_process <- function(samples, parameters, data_full, data_fit,
     samples$trajectories$time / samples$trajectories$rate
   date <- ZamCovid:::numeric_date_as_date(tail(samples$trajectories$date, 1))
   
-  ## The Rt calculation is slow and runs in serial
-  # if (Rt) {
-  #   message("Computing Rt")
-  #   rt <- calculate_ZamCovid_Rt(samples, TRUE)
-  # } else {
-  #   rt <- NULL
-  # }
+  
+  if (Rt) {
+    message("Computing Rt")
+    rt <- calculate_ZamCovid_Rt(samples)
+  } else {
+    rt <- NULL
+  }
   
   message("Computing parameter MLE and covariance matrix")
   parameters_new <- fit_parameters(samples, parameters)
@@ -72,7 +72,7 @@ ZamCovid_fit_process <- function(samples, parameters, data_full, data_fit,
   
   list(
     fit = list(samples = samples,
-               rt = NULL,
+               rt = rt,
                severity = NULL,
                simulate = NULL,
                parameters = parameters_new,
@@ -138,8 +138,7 @@ create_simulate_object <- function(samples, start_date_sim, date) {
 }
 
 
-calculate_ZamCovid_Rt <- function(samples, weight_Rt) {
-  browser()
+calculate_ZamCovid_Rt <- function(samples, weight_Rt = FALSE) {
   time <- samples$trajectories$time
   info <- samples$info$info
   epoch_dates <- samples$info$epoch_dates
@@ -155,18 +154,17 @@ calculate_ZamCovid_Rt <- function(samples, weight_Rt) {
 }
 
 
-## TODO: not tested yet
 calculate_ZamCovid_Rt_region <- function(pars, state, transform,
                                          time, info, epoch_dates, weight_Rt,
                                          keep_strains_Rt) {
-  browser()
+  
   index_S <- grep("^S_", rownames(state))
   index_R <- grep("^R_", rownames(state))
-  index_ps <- grep("^prob_strain", rownames(state))
+  index_ps <- NULL
   
   S <- state[index_S, , , drop = FALSE]
   R <- state[index_R, , , drop = FALSE]
-  prob_strain <- state[index_ps, , , drop = FALSE]
+  prob_strain <- NULL
   
   dates <- time / 4
   
@@ -181,34 +179,17 @@ calculate_ZamCovid_Rt_region <- function(pars, state, transform,
              eff_Rt_general = numeric(0),
              Rt_general = numeric(0))
   
-  for (i in seq_len(length(epoch_dates) + 1L)) {
-    if (i == 1) {
-      dates1 <- which(dates <= epoch_dates[1])
-      initial_time_from_parameters <- TRUE
-    } else  if (i <= length(epoch_dates)) {
-      dates1 <- which(dates > epoch_dates[i - 1] & dates <= epoch_dates[i])
-      initial_time_from_parameters <- FALSE
-    } else {
-      dates1 <- which(dates > epoch_dates[i - 1])
-      initial_time_from_parameters <- FALSE
-    }
-    
-    if (length(dates1) == 0) {
-      next
-    }
     
     pars_model <- lapply(seq_rows(pars), function(j)
-      transform(pars[j, ])[[i]]$pars)
+      transform(pars[j, ]))
     
-    n_strains <- pars_model[[1]]$n_strains
-    n_strains_R <- pars_model[[1]]$n_strains_R
+    n_strains <- 1
+    n_strains_R <- 1
     n_vacc_classes <- pars_model[[1]]$n_vacc_classes
     
     suffix <- paste0("_", c(ZamCovid:::model_age_bins()$start))
     S_nms <- get_names("S", list(n_vacc_classes), suffix)
-    
-    time1 <- time[dates1]
-    S1 <- S[S_nms, , dates1, drop = FALSE]
+    S1 <- S[S_nms, , , drop = FALSE]
     
     if (n_strains == 1) {
       R1 <- NULL
@@ -218,48 +199,13 @@ calculate_ZamCovid_Rt_region <- function(pars, state, transform,
                          list(S = n_strains_R, V = n_vacc_classes),
                          suffix)
       R1 <- R[R_nms, , dates1, drop = FALSE]
-      prob_strain1 <- prob_strain[, , dates1, drop = FALSE]
+      prob_strain1 <- NULL
     }
     
-    rt1 <- sircovid::lancelot_Rt_trajectories(
-      time1, S1, pars_model, type = type,
-      initial_time_from_parameters = initial_time_from_parameters,
-      shared_parameters = FALSE, R = R1, prob_strain = prob_strain1,
-      weight_Rt = weight_Rt, keep_strains_Rt = keep_strains_Rt)
-    
-    reshape_rt <- function(r) {
-      if (weight_Rt) {
-        tmp <- array(NA, c(length(time1), 3, n_pars))
-        tmp[, 3, ] <- r
-      } else {
-        tmp <- array(NA, c(length(time1), 2, n_pars))
-      }
-      tmp[, 1, ] <- r
-      tmp
-    }
-    
-    for (nm in names(rt)) {
-      if (n_strains == 1 && !(weight_Rt && !keep_strains_Rt)) {
-        if (nm %in% type) {
-          rt1[[nm]] <- reshape_rt(rt1[[nm]])
-        }
-      }
-      if (length(rt[[nm]]) == 0) {
-        rt[[nm]] <- rt1[[nm]]
-      } else if (length(dim(rt1[[nm]])) == 2) {
-        rt[[nm]] <- rbind(rt[[nm]], rt1[[nm]])
-      } else {
-        rt[[nm]] <- abind1(rt[[nm]], rt1[[nm]])
-      }
-    }
-  }
-  
-  if (weight_Rt && keep_strains_Rt) {
-    for (nm in type) {
-      colnames(rt[[nm]]) <- c("strain_1", "strain_2", "weighted")
-    }
-  }
-  
+    rt <- ZamCovid::ZamCovid_Rt_trajectories(
+      time, S1, pars_model, type = type,
+      shared_parameters = FALSE, R = R1, prob_strain = prob_strain1)
+
   class(rt) <- c("Rt_trajectories", "Rt")
   rt
 }
