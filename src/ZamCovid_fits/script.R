@@ -23,6 +23,7 @@ samples <- fit_run(pars, filter, control$pmcmc)
 
 
 ## 3. Post-processing of model fits ----
+pkgload::load_all("~/R_Projects/ZamCovid", export_all = FALSE)
 dat <- ZamCovid_fit_process(samples, pars, data_full, data_fit)
 
 dir.create("outputs", FALSE, TRUE)
@@ -32,6 +33,11 @@ write_csv(dat$fit$parameters$proposal, "outputs/proposal.csv")
 
 dir.create("plots", FALSE, TRUE)
 message("Creating plots")
+
+png("plots/fits_rt.png", units = "in", width = 6, height = 6, res = 300)
+plot_rt(dat)
+dev.off()
+
 png("plots/pmcmc_traceplots.png", units = "in", width = 10, height = 6, res = 300)
 plot_fit_traces(samples)
 dev.off()

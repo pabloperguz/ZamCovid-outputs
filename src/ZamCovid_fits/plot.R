@@ -188,6 +188,39 @@ plot_deaths <- function(samples, data_fit, age = TRUE) {
 }
 
 
+plot_rt <- function(dat) {
+
+  rt <- dat$fit$rt$Rt_general
+  eff_rt <- dat$fit$rt$eff_Rt_general
+  dates <- ZamCovid:::numeric_date_as_date(dat$fit$rt$time[, 1] / 4)
+  
+  df_to_long <- function(df, which) {
+    data.frame(
+      date = dates,
+      mean = rowMeans(df),
+      lb = matrixStats::rowQuantiles(df, probs = 0.025),
+      ub = matrixStats::rowQuantiles(df, probs = 0.975),
+      type = which
+    )
+  }
+  
+  df <- rbind(df_to_long(rt, "Rt_general"),
+              df_to_long(eff_rt, "eff_Rt_general"))
+  
+  ggplot(df, aes(date)) +
+    geom_line(aes(y = mean, col = type)) +
+    geom_ribbon(aes(ymin = lb, ymax = ub, fill = type), alpha = 0.3) +
+    scale_y_continuous(expand = c(0, 0)) +
+    scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
+    labs(x = "", y = "Reproduction number") +
+    theme_minimal() +
+    theme(legend.position = "top",
+          legend.title = element_blank(),
+          axis.line = element_line(),
+          axis.text.x = element_text(angle = 45, vjust = 0.7))
+  
+}
+
 get_new_pars <- function(samples, priors) {
   
   i <- which.max(samples$probabilities[, "log_posterior"])

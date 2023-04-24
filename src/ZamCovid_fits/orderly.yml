@@ -18,6 +18,7 @@ artefacts:
         - plots/pmcmc_traceplots.png
         - plots/fits_serology.png
         - plots/fits_deaths.png
+        - plots/fits_rt.png
   - data:
       description: PMCMC results for analysis
       filenames:
