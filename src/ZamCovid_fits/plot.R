@@ -120,9 +120,9 @@ plot_serology <- function(samples, data_fit,
     geom_ribbon(aes(ymin = lb, ymax = ub, fill = state), alpha = 0.4) +
     geom_point(aes(y = data_mean, col = state), size = 0.9, alpha = 0.5) +
     geom_errorbar(aes(ymin = data_lb, ymax = data_ub, 
-                        col = state), size = 0.3, alpha = 0.5) +
+                        col = state), linewidth = 0.3, alpha = 0.5) +
     scale_y_continuous(expand = c(0, 0),
-                       limits = c(0, 0.3),
+                       limits = c(0, 1),
                        labels = scales::percent_format()) +
     scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
     facet_wrap(~state, scales = "free_y") +
@@ -187,6 +187,39 @@ plot_deaths <- function(samples, data_fit, age = TRUE) {
           axis.text.x = element_text(angle = 45, vjust = 0.7))
 }
 
+
+plot_rt <- function(dat) {
+
+  rt <- dat$fit$rt$Rt_general
+  eff_rt <- dat$fit$rt$eff_Rt_general
+  dates <- ZamCovid:::numeric_date_as_date(dat$fit$rt$time[, 1] / 4)
+  
+  df_to_long <- function(df, which) {
+    data.frame(
+      date = dates,
+      mean = rowMeans(df),
+      lb = matrixStats::rowQuantiles(df, probs = 0.025),
+      ub = matrixStats::rowQuantiles(df, probs = 0.975),
+      type = which
+    )
+  }
+  
+  df <- rbind(df_to_long(rt, "Rt_general"),
+              df_to_long(eff_rt, "eff_Rt_general"))
+  
+  ggplot(df, aes(date)) +
+    geom_line(aes(y = mean, col = type)) +
+    geom_ribbon(aes(ymin = lb, ymax = ub, fill = type), alpha = 0.3) +
+    scale_y_continuous(expand = c(0, 0)) +
+    scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
+    labs(x = "", y = "Reproduction number") +
+    theme_minimal() +
+    theme(legend.position = "top",
+          legend.title = element_blank(),
+          axis.line = element_line(),
+          axis.text.x = element_text(angle = 45, vjust = 0.7))
+  
+}
 
 get_new_pars <- function(samples, priors) {
   

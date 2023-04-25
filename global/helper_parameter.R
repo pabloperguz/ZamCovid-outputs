@@ -2,14 +2,14 @@ setwd(orderly::orderly_config()$root)
 source("global/util.R")
 
 add_parameter <- function(name, initial, min, max, proposal,
-                          assumptions = "central",
+                          assumptions = "central", model = "deterministic",
                           integer = FALSE, include = TRUE) {
   
   info_filename <-
-    paste("src/ZamCovid_parameters/pars", assumptions,
+    paste("src/ZamCovid_parameters/pars", assumptions, model,
           "info.csv", sep = "/")
   proposal_filename <- 
-    paste("src/ZamCovid_parameters/pars", assumptions,
+    paste("src/ZamCovid_parameters/pars", assumptions, model,
           "proposal.csv", sep = "/")
   
   parameters_info <- read_csv(info_filename) 
@@ -65,13 +65,13 @@ add_parameter <- function(name, initial, min, max, proposal,
 }
 
 
-remove_parameter <- function(name, assumptions = "central") {
+remove_parameter <- function(name, assumptions = "central", model = "deterministic") {
   
   info_filename <-
-    paste("src/ZamCovid_parameters/pars", assumptions,
+    paste("src/ZamCovid_parameters/pars", assumptions, model,
           "info.csv", sep = "/")
   proposal_filename <- 
-    paste("src/ZamCovid_parameters/pars",assumptions,
+    paste("src/ZamCovid_parameters/pars",assumptions, model,
           "proposal.csv", sep = "/")
   
   parameters_info <- read_csv(info_filename)
@@ -89,19 +89,13 @@ remove_parameter <- function(name, assumptions = "central") {
 
 
 rename_parameter <- function(old_name, new_name,
-                             assumptions = "central", deterministic = TRUE) {
-  
-  if (deterministic) {
-    deterministic <- "deterministic"
-  } else {
-    deterministic <- "stochastic"
-  }
+                             assumptions = "central", model = "deterministic") {
   
   info_filename <-
-    paste("src/ZamCovid_parameters/pars", assumptions, deterministic,
+    paste("src/ZamCovid_parameters/pars", assumptions, model,
           "info.csv", sep = "/")
   proposal_filename <- 
-    paste("src/ZamCovid_parameters/pars", assumptions, deterministic,
+    paste("src/ZamCovid_parameters/pars", assumptions, model,
           "proposal.csv", sep = "/")
   
   
@@ -123,21 +117,15 @@ rename_parameter <- function(old_name, new_name,
 }
 
 
-add_beta <- function(beta_name, beta_initial, min, max, proposal,
-                     assumptions = "central", deterministic = TRUE,
-                     factor = NULL) {
-  
-  if (deterministic) {
-    deterministic <- "deterministic"
-  } else {
-    deterministic <- "stochastic"
-  }
+add_beta <- function(beta_name, beta_initial, min = 0, max = 1,
+                     proposal = NULL, factor = NULL,
+                     assumptions = "central", model = "deterministic") {
   
   info_filename <-
-    paste("src/ZamCovid_parameters/pars", assumptions, deterministic,
+    paste("src/ZamCovid_parameters/pars", assumptions, model,
           "info.csv", sep = "/")
   proposal_filename <- 
-    paste("src/ZamCovid_parameters/pars", assumptions, deterministic,
+    paste("src/ZamCovid_parameters/pars", assumptions, model,
           "proposal.csv", sep = "/")
   
   parameters_info <- read_csv(info_filename)
