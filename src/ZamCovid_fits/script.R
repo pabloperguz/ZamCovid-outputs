@@ -23,7 +23,6 @@ samples <- fit_run(pars, filter, control$pmcmc)
 
 
 ## 3. Post-processing of model fits ----
-pkgload::load_all("~/R_Projects/ZamCovid", export_all = FALSE)
 dat <- ZamCovid_fit_process(samples, pars, data_full, data_fit)
 
 dir.create("outputs", FALSE, TRUE)

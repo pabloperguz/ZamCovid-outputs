@@ -122,7 +122,7 @@ plot_serology <- function(samples, data_fit,
     geom_errorbar(aes(ymin = data_lb, ymax = data_ub, 
                         col = state), linewidth = 0.3, alpha = 0.5) +
     scale_y_continuous(expand = c(0, 0),
-                       limits = c(0, 0.3),
+                       limits = c(0, 1),
                        labels = scales::percent_format()) +
     scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
     facet_wrap(~state, scales = "free_y") +
