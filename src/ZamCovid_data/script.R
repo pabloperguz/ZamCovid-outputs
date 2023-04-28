@@ -7,6 +7,8 @@ end_date <- as.Date("2021-12-31")
 deaths <- read_csv("data/kabwe_all_deaths.csv") %>% mutate(date = as.Date(date))
 serology <- read_csv("data/kabwe_seroprevalence.csv") %>% mutate(date = as.Date(date))
 cases <- read_csv("data/kabwe_cases.csv") %>% mutate(date = as.Date(date))
+historic_deaths <- read_csv("data/kabwe_historic_deaths.csv") %>%
+  mutate(month = factor(month, levels = month.abb))
 
 ## Data will run from 2020-01-01 to 2021-12-31
 # Note that:
