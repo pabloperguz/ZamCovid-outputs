@@ -210,7 +210,8 @@ plot_rt <- function(dat) {
   ggplot(df, aes(date)) +
     geom_line(aes(y = mean, col = type)) +
     geom_ribbon(aes(ymin = lb, ymax = ub, fill = type), alpha = 0.3) +
-    scale_y_continuous(expand = c(0, 0)) +
+    geom_hline(yintercept = 1, linewidth = 0.5, col = "red", linetype = 3) +
+    scale_y_continuous(expand = c(0, 0), breaks = seq(0, 20, 1)) +
     scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
     labs(x = "", y = "Reproduction number") +
     theme_minimal() +
