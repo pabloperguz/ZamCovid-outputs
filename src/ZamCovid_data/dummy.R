@@ -106,13 +106,15 @@ ggplottheme <- theme_classic() +
   )
 theme_set(ggplottheme)
 
+
+
+alpha <- 0.95
 deaths_for_model <- historic_deaths %>%
   mutate(month_name = month,
          month = match(month, month.abb)) %>%
   pivot_longer(!c(month, month_name), names_to = "year", values_to = "deaths") %>%
-  mutate(year = as.numeric(year))
-
-alpha <- 0.95
+  mutate(year = as.numeric(year),
+         deaths = floor(deaths * 1.937550))
 
 model_deaths <- deaths_for_model %>%
   filter(year < 2020) %>%
@@ -148,11 +150,12 @@ expected_deaths %>%
   ggplot(., aes(month)) +
   geom_pointrange(aes(y = expected, ymin = lb, ymax = ub, col = "Expected"),
                   linetype = 3) +
-  geom_point(aes(y = agg_2020$value, col = "Data (agg)"), size = 2) +
+  # geom_point(aes(y = agg_2020$value, col = "Data (agg)"), size = 2) +
   geom_point(aes(y = ll_2020$value, col = "Data (linelist)"), size = 2) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 200)) +
   labs(y = "Monthly deaths 2020", x = "") +
-  scale_color_manual(values = c("blue3", "red3", "green4"),
-                     breaks = c("Data (linelist)", "Data (agg)", "Expected")) +
+  # scale_color_manual(values = c("blue3", "red3", "green4"),
+  #                    breaks = c("Data (linelist)", "Data (agg)", "Expected")) +
   theme(legend.title = element_blank())
 
 # count <- 0:4
