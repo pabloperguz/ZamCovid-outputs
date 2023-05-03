@@ -76,7 +76,7 @@ rm(list = setdiff(ls(), env_keep))
 orderly::orderly_run("ZamCovid_fits",
                      parameters = list(region = "kabwe",
                                        date = date,
-                                       short_run = FALSE,
+                                       short_run = short_run,
                                        assumptions = assumptions,
                                        deterministic = deterministic),
                      use_draft = "newer")
