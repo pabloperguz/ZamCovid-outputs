@@ -222,6 +222,82 @@ plot_rt <- function(dat) {
   
 }
 
+
+plot_severity <- function(dat) {
+  
+  ifr <- get_severity(dat$fit$severity, "ifr") %>%
+    filter(date >= as.Date("2020-02-22"))
+  
+  p1 <- ggplot(ifr, aes(date, mean)) +
+    geom_line(col = "blue4") +
+    geom_ribbon(aes(ymin = lb, ymax = ub), alpha = 0.3, fill = "blue4") +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, 0.03),
+                       labels = scales::percent_format()) +
+    scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
+    labs(y = "Effective IFR", x = "") +
+    theme_minimal() +
+    theme(axis.line = element_line(),
+          axis.text.x = element_text(angle = 45, vjust = 0.7))
+  
+  ifr_age <- get_severity(dat$fit$severity, "ifr", TRUE) %>%
+    filter(date >= as.Date("2020-04-01")) %>%
+    pivot_longer(!c(date, age), names_to = "estimate") %>%
+    group_by(age, estimate) %>%
+    summarise(value = mean(value)) %>%
+    pivot_wider(names_from = estimate) %>%
+    mutate(age = factor(age, levels = seq(0, 75, 5)))
+  
+  p2 <- ggplot(ifr_age, aes(y = age, col = age)) +
+    geom_pointrange(aes(x = mean, xmin = lb, xmax = ub)) +
+    scale_x_continuous(labels = scales::percent_format(),
+                       trans = "log") +
+    labs(x = "Effective IFR", y = "Age group") +
+    theme_minimal() +
+    theme(axis.line = element_line(),
+          axis.text.x = element_text(angle = 45, vjust = 0.7),
+          legend.position = "none")
+  
+  p1 + p2
+}
+
+
+get_severity <- function(severity, what, by_age = FALSE) {
+  
+  age_bands <- ZamCovid:::model_age_bins()$start
+  dates <- ZamCovid:::numeric_date_as_date(severity$date[-1])
+  
+  if (by_age) {
+    ret <- NULL
+    get <- paste0(what, "_age_", age_bands)
+  } else {
+    ret <- data.frame(date = dates)
+    get <- what
+  }
+  
+  for (g in get) {
+    sev <- severity[[g]][-1, ]
+    
+    tmp <- data.frame(t(apply(sev, 1, quantile, c(0.5, 0.025, 0.975),
+                              na.rm = TRUE))) %>%
+      setNames(., c("mean", "lb", "ub"))
+    
+    if (by_age) {
+     
+      tmp <- tmp %>%
+       mutate(date = dates,
+              age = gsub("ifr_age_", "", g)) %>%
+        select(date, age, mean, lb, ub)
+      
+     ret <- rbind(ret, tmp)
+     
+    } else {
+      ret <- cbind(ret, tmp)
+    }
+  }
+  
+  ret
+}
+
 get_new_pars <- function(samples, priors) {
   
   i <- which.max(samples$probabilities[, "log_posterior"])

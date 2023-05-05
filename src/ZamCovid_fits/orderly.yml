@@ -19,6 +19,7 @@ artefacts:
         - plots/fits_serology.png
         - plots/fits_deaths.png
         - plots/fits_rt.png
+        - plots/fits_ifr.png
   - data:
       description: PMCMC results for analysis
       filenames:
@@ -39,6 +40,7 @@ packages:
   - dplyr
   - tidyr
   - ggplot2
+  - patchwork
 
 depends:
   ZamCovid_data:

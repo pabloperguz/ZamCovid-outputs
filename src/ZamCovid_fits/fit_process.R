@@ -9,6 +9,9 @@ ZamCovid_fit_process <- function(samples, parameters, data_full, data_fit) {
   message("Computing Rt")
   rt <- calculate_ZamCovid_Rt(samples)
   
+  message("Computing severity")
+  severity <- calculate_severity(samples)
+  
   message("Computing parameter MLE and covariance matrix")
   parameters_new <- fit_parameters(samples, parameters)
   
@@ -16,9 +19,41 @@ ZamCovid_fit_process <- function(samples, parameters, data_full, data_fit) {
   list(fit = list(
     samples = samples,
     rt = rt,
+    severity = severity,
     parameters = parameters_new,
     data = list(fitted = data_fit, full = data_full))
   )
+}
+
+
+calculate_severity <- function(samples) {
+  
+  time <- samples$trajectories$time
+  dates <- samples$trajectories$date
+  state <- samples$trajectories$state
+  
+  ret <- calculate_severity_region(state, time, dates)
+  ret
+}
+
+
+calculate_severity_region <- function(state, time, date) {
+  
+  # String vectors to formulate severity trajectory names needed
+  sev_traj <- grep("^ifr", rownames(state), value = TRUE)
+  
+  severity <- list()
+  
+  for (s in sev_traj) {
+    tmp <- t(state[s, , ])
+    severity[[s]] <- tmp
+  }
+  
+  severity$time <- time
+  severity$date <- date
+  class(severity) <- "IFR_t_trajectories"
+  
+  severity
 }
 
 
