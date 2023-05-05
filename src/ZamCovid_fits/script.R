@@ -33,6 +33,10 @@ write_csv(dat$fit$parameters$proposal, "outputs/proposal.csv")
 dir.create("plots", FALSE, TRUE)
 message("Creating plots")
 
+png("plots/fits_ifr.png", units = "in", width = 6, height = 6, res = 300)
+plot_severity(dat)
+dev.off()
+
 png("plots/fits_rt.png", units = "in", width = 6, height = 6, res = 300)
 plot_rt(dat)
 dev.off()
