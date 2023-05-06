@@ -12,12 +12,22 @@ regions <- c("kabwe")
 ## * early December 2020: vaccination starts, expand vaccine classes 
 epoch_dates <- c("2020-12-05")
 
+## To use historic deaths timeseries to infer baseline deaths in 2020-2021, we'll
+## read in the data object from ZamCovid_data
+data_timeseries <- readRDS("data/data_timeseries.rds")
+historic_deaths <- data_timeseries$historic
+
+## Save all other data for use in the fitting task
+data_timeseries <- data_timeseries$data
+write_csv(data_timeseries, "data_timeseries.csv")
+
 ## Load all parameters from the last run; creates priors, and updates
 ## new entries into the proposal matrix as needed.
 pars <- load_mcmc_parameters(assumptions, deterministic)
 
 baseline <- lapply(regions, create_baseline, date, 
-                   epoch_dates, pars, assumptions)
+                   epoch_dates, pars, assumptions,
+                   historic_deaths = historic_deaths)
 names(baseline) <- regions
 
 message("Writing parameters_info.csv")

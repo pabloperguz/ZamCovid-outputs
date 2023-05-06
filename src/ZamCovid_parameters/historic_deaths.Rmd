@@ -1,0 +1,17 @@
+---
+title: "Historic deaths"
+output: html_document
+---
+
+```{r setup, include=FALSE, echo = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Linear model fitted to monthly historic deaths
+
+
+```{r, echo = FALSE, fig.width = 10}
+print(jtools::summ(historic_deaths$model))
+
+historic_deaths$plot
+```

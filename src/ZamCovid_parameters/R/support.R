@@ -33,3 +33,74 @@ update_proposal <- function(info, proposal) {
   }
   proposal
 }
+
+
+infer_baseline_deaths <- function(historic, date, alpha = 0.95,
+                                  inflate = 1 / 0.516) {
+  
+  expected_model <- historic_deaths %>%
+    mutate(deaths = floor(deaths * inflate)) %>%
+    nest_by(site) %>%
+    mutate(model = list(lm(deaths ~ year + month, data = data))) %>%
+    mutate(model = list(lm(deaths ~ year + month, data = data))) %>%
+    mutate(sigma = broom::glance(model)$sigma,
+           nobs = broom::glance(model)$nobs,
+           df = model$df,
+           t_df = abs(qt((1 - alpha) / 2, df)))
+  
+  expected_deaths <- expected_model %>%
+    summarise(
+      df = model$df,
+      broom::augment(model,
+                     newdata = tibble(month = rep(c(1:12), 2) %>% as.factor(),
+                                      year = rep(c(2020, 2021), each = 12)),
+                     interval = "prediction",
+                     se_fit = TRUE)) %>%
+    mutate(month_num = as.numeric(month)) %>%
+    rename(expected = .fitted,
+           lb = .lower,
+           ub = .upper) %>%
+    mutate(t_df = abs(qt((1 - alpha) / 2, df)),
+           se_fit_pred = (ub - expected) / t_df)
+  
+  ## Output linear model diagnostics for scrutiny
+  mod <- expected_model$model[[1]]
+  dat <- expected_model$data[[1]]
+  
+  names(mod$coefficients)[3:13] <- month.abb[-1]
+  
+  p1 <- jtools::plot_summs(mod, plot.distributions = TRUE)
+  p2 <- ggplot(dat, aes(x = year, y = deaths)) +
+    geom_point() +
+    scale_x_continuous(breaks = c(2017:2019)) +
+    scale_y_continuous(expand = c(0, 0), limits = c(100, 250)) +
+    stat_smooth(method = "lm") +
+    theme_minimal() +
+    theme(axis.line = element_line())
+  
+  # Extract only death rate from model for replacement function
+  expected_deaths <- baseline_death_rate(expected_deaths, date)
+  
+  list(
+    expected_deaths = expected_deaths,
+    model = mod,
+    plot = p1 + p2
+  )
+}
+
+
+baseline_death_rate <- function(expected_deaths, d) {
+  
+  out <- expected_deaths %>%
+    ungroup() %>%
+    mutate(date = as.Date(paste0(year, "-", month, "-01")),
+           days = lubridate::days_in_month(date),
+           rate = round(expected / days)) %>%
+    select(date, rate)
+  
+  if (out$date[nrow(out)] > d) {
+    out[out$date <= d, ]
+  } else {
+    out
+  }
+}

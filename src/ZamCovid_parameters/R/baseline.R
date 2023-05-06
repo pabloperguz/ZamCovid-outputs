@@ -1,5 +1,6 @@
 
-create_baseline <- function(region, date, epoch_dates, pars, assumptions) {
+create_baseline <- function(region, date, epoch_dates, pars, assumptions,
+                            historic_deaths = NULL) {
   
   pars_info <- pars$info
   pars_vcv <- pars$proposal
@@ -37,6 +38,23 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions) {
     g <-  n_zambia / sum(population$n)
     n_kabwe <- ceiling(230802 * g)
     population$n <- round((population$n / sum(population$n)) * n_kabwe)
+    
+    if (assumptions == "historic_deaths_low") {
+      inflate <- 1 / 0.75
+    } else if (assumptions == "historic_deaths_high") {
+      inflate <- 1 / 0.25
+    } else {
+      inflate <- 1 / 0.516
+    }
+    
+    historic_deaths <- infer_baseline_deaths(historic_deaths, date,
+                                             inflate = inflate)
+    
+    base_death_date <-
+      ZamCovid:::numeric_date(historic_deaths$expected_deaths$date)
+    base_death_date[1] <- 0
+    base_death_value <- historic_deaths$expected_deaths$rate
+    rmarkdown::render("historic_deaths.Rmd")
   }
   
   ## 3. Set-up basic model parameters ----
@@ -52,7 +70,7 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions) {
     # direct
     "start_date", beta_names,
     # severity
-    "p_G_D"
+    "p_G_D", "alpha_D"
   )
   stopifnot(setequal(to_fit_all, names(pars_info)))
   
@@ -185,6 +203,8 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions) {
     sens_and_spec = sens_and_spec,
     seed_size = seed_size,
     seed_pattern = seed_pattern,
+    base_death_date = base_death_date,
+    base_death_value = unname(base_death_value),
     
     rel_severity = rel_severity,
     rel_gamma_wildtype = rel_gamma_wildtype,
