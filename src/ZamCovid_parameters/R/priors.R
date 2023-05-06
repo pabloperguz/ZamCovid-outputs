@@ -48,7 +48,7 @@ create_priors <- function(pars_info) {
   
   ret <- priors_wide_to_long(hps)
   
-  par <- c("p_G_D")
+  par <- c("p_G_D", "alpha_D")
   # We will zero the probabilities of going into hospital for now as there are
   # no reliable sources of hospitalisation data. Fitted p_G_D will reflect
   # overall probability of death by mechanistically assuming all deaths
