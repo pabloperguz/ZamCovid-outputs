@@ -44,7 +44,7 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     } else if (assumptions == "historic_deaths_high") {
       inflate <- 1 / 0.25
     } else {
-      inflate <- 1 / 0.516
+      inflate <- 1 / 0.433
     }
     
     historic_deaths <- infer_baseline_deaths(historic_deaths, date,
