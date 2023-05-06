@@ -11,7 +11,7 @@ control <- set_control(short_run, deterministic)
 data_full <- read_csv("data/data_timeseries.csv")
 data_fit <- parse_data(data_full,
                        fit_sero = TRUE, fit_deaths = TRUE,
-                       sero_by_age = TRUE, deaths_by_age = TRUE)
+                       sero_by_age = TRUE, deaths_by_age = FALSE)
 
 
 ## 2. Build particle filter and run pMCMC
@@ -42,7 +42,7 @@ plot_rt(dat)
 dev.off()
 
 png("plots/pmcmc_traceplots.png", units = "in", width = 10, height = 6, res = 300)
-plot_fit_traces(samples)
+plot_fit_traces(dat$fit$samples)
 dev.off()
 
 png("plots/fits_serology.png", units = "in", width = 10, height = 6, res = 300)

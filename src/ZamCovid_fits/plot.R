@@ -16,10 +16,10 @@ plot_fit_traces <- function(samples) {
     k
   }
   
-  i <- reorder_beta(colnames(samples$pars))
-  pars <- samples$pars[, i]
+  i <- reorder_beta(colnames(samples$pars_full))
+  pars <- samples$pars_full[, i]
   nms <- colnames(pars)
-  probs <- samples$probabilities
+  probs <- samples$probabilities_full
   
   op <- par(no.readonly = TRUE)
   on.exit(par(op))
@@ -45,12 +45,11 @@ plot_fit_traces <- function(samples) {
             ylab = name, col = cols,
             main = main,
             font.main = 1)
-    rug(samples$iteration[samples$chain == 1], ticksize = 0.1)
   }
   
   new_grid(length(nms), FALSE)
   for (nm in nms) {
-    plot_traces1(samples$pars[, nm], nm)
+    plot_traces1(samples$pars_full[, nm], nm)
   }
   plot_traces1(probs[, "log_likelihood"], "log_likelihood")
 }
@@ -142,9 +141,10 @@ plot_deaths <- function(samples, data_fit, age = TRUE) {
     } else {
       paste0("deaths_", c("all", "hosp"))
     }
+  
   data_plot <- data_fit[, c("date", "date_string", which)]
   data_plot$deaths_comm_inc <- data_plot$deaths_all - data_plot$deaths_hosp
-  colnames(data_plot) <- c("date", "date_string", "deaths_all",
+  colnames(data_plot) <- c("date", "date_string", "deaths_all_inc",
                            "deaths_hosp_inc", "deaths_comm_inc")
   
   states <- samples$trajectories$state
@@ -163,14 +163,13 @@ plot_deaths <- function(samples, data_fit, age = TRUE) {
     )
   }
   
-  traj <- c("deaths_hosp_inc", "deaths_comm_inc")
+  traj <- c("deaths_all_inc")
   df <- NULL
   for (t in traj) {
     ret <- traj_to_long(t, states[t, , -1])
     df <- rbind(df, ret)
   }
   
-  # res_infs <- sample$trajectories$state["infections", , ] / p$N_tot_all * 100
   df$state <- factor(df$state, levels = unique(df$state))
   
   ggplot(df, aes(x = date)) +
