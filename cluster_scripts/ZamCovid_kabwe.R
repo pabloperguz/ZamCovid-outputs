@@ -9,7 +9,8 @@ root_dir <- paste0(orderly::orderly_config()$root, "/src/")
 ## ---------------------------
 short_run <- TRUE
 date <- "2021-08-01"
-assumptions <- "central"
+assumptions <- "fit_no_deaths"
+## can be: central, fit_no_deaths, low_ifr, base_deaths_low, base_deaths_high
 deterministic <- TRUE
 env_keep <- c("root_dir", "short_run", "date", "assumptions",
               "deterministic", "env_keep")
@@ -92,15 +93,15 @@ orderly::orderly_cleanup(failed_only = TRUE)
 ### Run fits task in cluster
 
 ## 0. Install ZamCovid ----
-Sys.unsetenv("GITHUB_PAT")
-remotes::install_github("pabloperguz/ZamCovid",
-                        ref = "baseline-deaths",
-                        force = TRUE)
-
-remotes::install_github("pabloperguz/ZamCovid",
-                        ref = "baseline-deaths",
-                        force = TRUE,
-                        lib = "Z:/Pablo/ZamCovid-outputs/contexts/lib/windows/4.2")
+# Sys.unsetenv("GITHUB_PAT")
+# remotes::install_github("pabloperguz/ZamCovid",
+#                         ref = "baseline-deaths",
+#                         force = TRUE)
+# 
+# remotes::install_github("pabloperguz/ZamCovid",
+#                         ref = "baseline-deaths",
+#                         force = TRUE,
+#                         lib = "Z:/Pablo/ZamCovid-outputs/contexts/lib/windows/4.2")
 
 #----
 

@@ -39,9 +39,9 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     n_kabwe <- ceiling(230802 * g)
     population$n <- round((population$n / sum(population$n)) * n_kabwe)
     
-    if (assumptions == "historic_deaths_low") {
+    if (assumptions == "base_deaths_low") {
       inflate <- 1 / 0.75
-    } else if (assumptions == "historic_deaths_high") {
+    } else if (assumptions == "base_deaths_high") {
       inflate <- 1 / 0.25
     } else {
       inflate <- 1 / 0.433
