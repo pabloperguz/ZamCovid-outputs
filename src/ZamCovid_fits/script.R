@@ -51,4 +51,4 @@ png("plots/fits_deaths.png", units = "in", width = 10, height = 6, res = 300)
 plot_deaths(samples, data_fit, age = FALSE)
 dev.off()
 
-rmarkdown::renderMarkdown("fit_results.Rmd")
+rmarkdown::render("fit_results.Rmd")

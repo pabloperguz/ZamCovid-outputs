@@ -9,7 +9,7 @@ root_dir <- paste0(orderly::orderly_config()$root, "/src/")
 ## ---------------------------
 short_run <- TRUE
 date <- "2021-08-01"
-assumptions <- "fit_no_deaths"
+assumptions <- "central"
 ## can be: central, fit_no_deaths, low_ifr, base_deaths_low, base_deaths_high
 deterministic <- TRUE
 env_keep <- c("root_dir", "short_run", "date", "assumptions",

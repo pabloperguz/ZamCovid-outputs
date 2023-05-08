@@ -15,3 +15,13 @@ print(jtools::summ(historic_deaths$model))
 
 historic_deaths$plot
 ```
+
+
+```{r, echo = FALSE}
+print(paste0("Parameters with ", assumptions, " assumptions"))
+print("Need to recover the following severity parameters")
+```
+
+```{r, echo = FALSE}
+print(target_p_G_D)
+```
