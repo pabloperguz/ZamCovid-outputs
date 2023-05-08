@@ -249,7 +249,8 @@ plot_severity <- function(dat, age = TRUE, xmin = "2020-04-01") {
   p2 <- ggplot(ifr_age, aes(y = age, col = age)) +
     geom_pointrange(aes(x = mean, xmin = lb, xmax = ub)) +
     scale_x_continuous(labels = scales::percent_format(),
-                       trans = "log") +
+                       trans = "log",
+                       breaks = c(0, 0.001, 0.01, 0.05, 0.1, 0.2)) +
     labs(x = "Effective IFR", y = "Age group") +
     theme_minimal() +
     theme(axis.line = element_line(),
