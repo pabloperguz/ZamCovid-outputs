@@ -169,3 +169,55 @@ get_names <- function(state_name, suffix_list, suffix0 = NULL) {
                                    state_name, paste0(x, collapse = "")))
   nms
 }
+
+
+summarise_trajectory <- function(sample, nm) {
+  # browser()
+  dates <- sample$trajectories$date[-1]
+  state <- t(sample$trajectories$state[nm, , -1])
+  
+  data.frame(
+    date = ZamCovid:::numeric_date_as_date(dates),
+    state = nm,
+    mean = rowMeans(state),
+    lb = matrixStats::rowQuantiles(state, probs = 0.025),
+    ub = matrixStats::rowQuantiles(state, probs = 0.975)
+  )
+}
+
+
+get_convergence_diagnostic <- function(dat) {
+  
+  conv_dx <- function(sample) {
+    n_full_pars <- nrow(sample$full_pars)
+    n_chains <- max(sample$chain)
+    
+    sample$chain_full <- rep(seq_len(n_chains), each = n_full_pars / n_chains)
+    
+    chains <- lapply(unname(split(data.frame(sample$full_pars),
+                                  sample$chain_full)), coda::as.mcmc)
+    
+    rhat <- tryCatch(coda::gelman.diag(chains), error = function(e) NULL)
+    if (!is.null(rhat)) {
+      rhat <- round(max(rhat$psrf[, "Point est."]), 1)
+    } else {
+      rhat <- NA_real_
+    }
+    
+    ess <- function(p) {
+      traces <- matrix(p, ncol = n_chains)
+      sum(coda::effectiveSize(coda::as.mcmc(traces)))
+    }
+    
+    pars <- sample$full_pars
+    nms <- colnames(pars)
+    pars_ess <- lapply(nms, function (nm) {
+      ess(pars[, nm])
+    })
+    pars_ess <- round(min(unlist(pars_ess)))
+    
+    data.frame(rhat, pars_ess)
+  }
+  
+  conv_dx(dat$fit$samples)
+}

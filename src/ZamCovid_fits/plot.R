@@ -222,10 +222,10 @@ plot_rt <- function(dat) {
 }
 
 
-plot_severity <- function(dat) {
+plot_severity <- function(dat, age = TRUE, xmin = "2020-04-01") {
   
-  ifr <- get_severity(dat$fit$severity, "ifr") %>%
-    filter(date >= as.Date("2020-02-22"))
+  ifr <- get_severity(dat$fit$severity, "ifr")
+  ifr[ifr$date < as.Date(xmin), c("mean", "lb", "ub")] <- NA_real_
   
   p1 <- ggplot(ifr, aes(date, mean)) +
     geom_line(col = "blue4") +
@@ -239,7 +239,7 @@ plot_severity <- function(dat) {
           axis.text.x = element_text(angle = 45, vjust = 0.7))
   
   ifr_age <- get_severity(dat$fit$severity, "ifr", TRUE) %>%
-    filter(date >= as.Date("2020-04-01")) %>%
+    filter(date >= as.Date(xmin)) %>%
     pivot_longer(!c(date, age), names_to = "estimate") %>%
     group_by(age, estimate) %>%
     summarise(value = mean(value)) %>%
@@ -256,7 +256,11 @@ plot_severity <- function(dat) {
           axis.text.x = element_text(angle = 45, vjust = 0.7),
           legend.position = "none")
   
-  p1 + p2
+  if (age) {
+    p1 + p2
+  } else {
+    p1
+  }
 }
 
 
@@ -296,6 +300,7 @@ get_severity <- function(severity, what, by_age = FALSE) {
   
   ret
 }
+
 
 get_new_pars <- function(samples, priors) {
   

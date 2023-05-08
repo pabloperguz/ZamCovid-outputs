@@ -1,5 +1,4 @@
 script: script.R
-## assumptions - Different assumptions used are central/pessimistic/optimistic scenarios. 
 
 parameters:
     region: ~
@@ -12,6 +11,10 @@ parameters:
       default: "central"
 
 artefacts:
+  - data:
+      description: summarised fit results
+      filenames:
+        - fit_results.html
   - staticgraph:
       description: pMCMC trace plots and fitted trajectories
       filenames:
@@ -34,6 +37,9 @@ sources:
   - support.R
   - fit_process.R
   - plot.R
+
+resources:
+  - fit_results.Rmd
   
 packages:
   - ZamCovid

@@ -248,8 +248,6 @@ parse_data <- function(dat, fit_sero = FALSE, fit_deaths = FALSE,
   
   # Now check which data we are fitting to and avoid double-fitting to
   # age-disaggregated and aggregated data
-  stopifnot(fit_deaths && (fit_sero || fit_cases))
-  
   if (fit_sero) {
     
     if (sero_by_age) {
