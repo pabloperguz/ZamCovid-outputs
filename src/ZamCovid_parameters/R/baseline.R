@@ -85,6 +85,9 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     
     
     ## Lastly, set assumptions of infection-induced immunity waning
+    ## Central assumption based on estimate of 24.7% remaining effectively
+    ## protected at 12 months in Bobrovitz et al.
+    ## https://linkinghub.elsevier.com/retrieve/pii/S1473309922008015
     imm_waning <- data.frame(parameter = "gamma_R", 
                              value = 1 / (2 * 365))
     if (assumptions == "imm_waning_low") {
