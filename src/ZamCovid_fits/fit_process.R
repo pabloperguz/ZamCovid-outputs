@@ -189,12 +189,12 @@ summarise_trajectory <- function(sample, nm) {
 get_convergence_diagnostic <- function(dat) {
   
   conv_dx <- function(sample) {
-    n_full_pars <- nrow(sample$full_pars)
+    n_full_pars <- nrow(sample$pars_full)
     n_chains <- max(sample$chain)
     
     sample$chain_full <- rep(seq_len(n_chains), each = n_full_pars / n_chains)
     
-    chains <- lapply(unname(split(data.frame(sample$full_pars),
+    chains <- lapply(unname(split(data.frame(sample$pars_full),
                                   sample$chain_full)), coda::as.mcmc)
     
     rhat <- tryCatch(coda::gelman.diag(chains), error = function(e) NULL)
@@ -209,7 +209,7 @@ get_convergence_diagnostic <- function(dat) {
       sum(coda::effectiveSize(coda::as.mcmc(traces)))
     }
     
-    pars <- sample$full_pars
+    pars <- sample$pars_full
     nms <- colnames(pars)
     pars_ess <- lapply(nms, function (nm) {
       ess(pars[, nm])
