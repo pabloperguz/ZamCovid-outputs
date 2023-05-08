@@ -61,6 +61,7 @@ compute_progression <- function(pars, progression_data) {
   )
   progression[k_parameters$parameter] <- k_parameters$value
   
+  progression$gamma_R <- gammas$gamma_R
   progression$k_sero_pre <- 1
   progression$gamma_sero_pre <- 1 / 13
   progression$k_PCR_pre <- 1

@@ -83,6 +83,17 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
         target_p_G_D$p_G_D
       }
     
+    
+    ## Lastly, set assumptions of infection-induced immunity waning
+    imm_waning <- data.frame(parameter = "gamma_R", 
+                             value = 1 / (2 * 365))
+    if (assumptions == "imm_waning_low") {
+      imm_waning$value <- 1 / (1 * 365)
+    } else if (assumptions == "imm_waning_high") {
+      imm_waning$value <- 1 / (3 * 365)
+    }
+    progression_data <- rbind(progression_data, imm_waning)
+    
     rmarkdown::render("historic_deaths.Rmd")
   }
   
