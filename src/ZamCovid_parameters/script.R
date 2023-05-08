@@ -12,8 +12,8 @@ regions <- c("kabwe")
 ## * early December 2020: vaccination starts, expand vaccine classes 
 epoch_dates <- c("2020-12-05")
 
-## To use historic deaths timeseries to infer baseline deaths in 2020-2021, we'll
-## read in the data object from ZamCovid_data
+## To use historic deaths timeseries to infer baseline deaths in 2020-2021, we'll
+## read in the data object from ZamCovid_data
 data_timeseries <- readRDS("data/data_timeseries.rds")
 historic_deaths <- data_timeseries$historic
 
