@@ -51,6 +51,14 @@ depends:
      id: latest(parameter:assumptions == "p_G_D_low" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
      use:
         fits/p_G_D_low_fits.rds: outputs/fit.rds
+ - ZamCovid_fits:
+     id: latest(parameter:assumptions == "imm_waning_high" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
+     use:
+        fits/imm_waning_high_fits.rds: outputs/fit.rds
+ - ZamCovid_fits:
+     id: latest(parameter:assumptions == "imm_waning_low" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
+     use:
+        fits/imm_waning_low_fits.rds: outputs/fit.rds
 
 requester: ZamCovid
 author: Pablo
