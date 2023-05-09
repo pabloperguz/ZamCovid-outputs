@@ -4,7 +4,7 @@ artefacts:
   - data:
       description: Data to fit the model
       filenames:
-        - data_timeseries.csv
+        - data_timeseries.rds
   - staticgraph:
       description: Visualise data to fit
       filenames:
@@ -27,6 +27,7 @@ resources:
   - data/kabwe_seroprevalence.csv
   - data/kabwe_all_deaths.csv
   - data/kabwe_cases.csv
+  - data/kabwe_historic_deaths.csv
 
 requester: ZamCovid
 author: Pablo

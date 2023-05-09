@@ -61,6 +61,7 @@ compute_progression <- function(pars, progression_data) {
   )
   progression[k_parameters$parameter] <- k_parameters$value
   
+  progression$gamma_R <- gammas$gamma_R
   progression$k_sero_pre <- 1
   progression$gamma_sero_pre <- 1 / 13
   progression$k_PCR_pre <- 1
@@ -74,36 +75,13 @@ compute_progression <- function(pars, progression_data) {
 }
 
 
-compute_observation <- function(pars, region) {
+compute_observation <- function(pars) {
   
   ## WARNING: this is a hack
   list2env(pars, environment())
   
-  # observation <- ZamCovid::ZamCovid_parameters_observation()
-  observation$phi_admitted <- phi_H
-  observation$kappa_admitted <- 1 / alpha_H
-  
-  observation$phi_D_H <- phi_D_H
-  observation$kappa_D_H <- 1 / alpha_D_H
-  
-  observation$phi_G_D <- phi_G_D
-  observation$kappa_death_comm <- 1 / alpha_G_D
-  
-  observation$kappa_pcr_cases <- 1 / alpha_pcr
-  observation$phi_pcr_all <- phi_pcr_all
-  observation$phi_pcr_0_19 <- phi_pcr_0_19
-  observation$phi_pcr_20_29 <- phi_pcr_20_29
-  observation$phi_pcr_30_39 <- phi_pcr_30_39
-  observation$phi_pcr_40_49 <- phi_pcr_40_49
-  observation$phi_pcr_50_59 <- phi_pcr_50_59
-  observation$phi_pcr_60_plus <- phi_pcr_60_plus
-  observation$phi_pcr_all_weekend <- phi_pcr_all_weekend
-  observation$phi_pcr_0_19_weekend <- phi_pcr_0_19
-  observation$phi_pcr_20_29_weekend <- phi_pcr_20_29_weekend
-  observation$phi_pcr_30_39_weekend <- phi_pcr_30_39_weekend
-  observation$phi_pcr_40_49_weekend <- phi_pcr_40_49_weekend
-  observation$phi_pcr_50_59_weekend <- phi_pcr_50_59_weekend
-  observation$phi_pcr_60_plus_weekend <- phi_pcr_60_plus_weekend
+  observation <- ZamCovid::ZamCovid_parameters_observation()
+  observation$kappa_death_all <- 1 / alpha_D
   
   observation
 }
@@ -115,7 +93,7 @@ make_transform <- function(baseline) {
                 "beta_date", "beta_names",
                 "severity_data", "progression_data",
                 "sens_and_spec", "seed_size", "seed_pattern",
-                "rel_gamma_wildtype",
+                "rel_gamma_wildtype", "base_death_date", "base_death_value",
                 ## Lots of vaccination things
                 "rel_severity", "vaccine_eligibility_min_age",
                 "vaccine_progression_rate",
@@ -128,7 +106,7 @@ make_transform <- function(baseline) {
   epoch_dates <- baseline$epoch_dates
   
   
-  expected <- c("start_date", baseline$beta_names, "p_G_D")
+  expected <- c("start_date", baseline$beta_names, "p_G_D", "alpha_D")
   
   function(pars) {
     
@@ -138,7 +116,7 @@ make_transform <- function(baseline) {
     
     progression <- compute_progression(pars, baseline$progression_data)
     severity <- compute_severity(pars, baseline$severity_data)
-    # observation <- compute_observation(pars, baseline$region)
+    observation <- compute_observation(pars)
     
     vaccine_schedule <- baseline$vaccine_schedule_effect
     
@@ -177,9 +155,12 @@ make_transform <- function(baseline) {
         beta_date = baseline$beta_date,
         beta_value = beta_value,
         
+        base_death_date = baseline$base_death_date,
+        base_death_value = baseline$base_death_value,
+        
         severity = severity,
         progression = progression,
-        # observation = observation,
+        observation = observation,
         sens_and_spec = baseline$sens_and_spec,
         
         initial_seed_size = baseline$seed_size,

@@ -9,10 +9,8 @@ pars <- fit_pars_load("inputs", region, assumptions,
 control <- set_control(short_run, deterministic)
 
 data_full <- read_csv("data/data_timeseries.csv")
-data_fit <- parse_data(data_full,
-                       fit_sero = TRUE, fit_deaths = TRUE,
-                       sero_by_age = TRUE, deaths_by_age = TRUE)
-
+data_fit <- parse_data(data_full, fit_sero = TRUE, sero_by_age = TRUE,
+                       fit_deaths = (!assumptions == "fit_no_deaths"))
 
 ## 2. Build particle filter and run pMCMC
 filter <- ZamCovid_particle_filter(data_fit, pars$mcmc,
@@ -42,7 +40,7 @@ plot_rt(dat)
 dev.off()
 
 png("plots/pmcmc_traceplots.png", units = "in", width = 10, height = 6, res = 300)
-plot_fit_traces(samples)
+plot_fit_traces(dat$fit$samples)
 dev.off()
 
 png("plots/fits_serology.png", units = "in", width = 10, height = 6, res = 300)
@@ -52,3 +50,5 @@ dev.off()
 png("plots/fits_deaths.png", units = "in", width = 10, height = 6, res = 300)
 plot_deaths(samples, data_fit, age = FALSE)
 dev.off()
+
+rmarkdown::render("fit_results.Rmd")

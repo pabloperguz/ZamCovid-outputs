@@ -58,3 +58,17 @@ plot_data <- function(df) {
   }
   plot[[1]] / plot[[2]] / plot[[3]]
 }
+
+
+get_baseline_deaths <- function(...) {
+  
+  read_csv("data/kabwe_historic_deaths.csv") %>%
+    mutate(month = factor(month, levels = month.abb)) %>%
+    pivot_longer(!month, names_to = "year", values_to = "deaths") %>%
+    mutate(year = as.integer(year),
+           month_name = month,
+           month = factor(match(month, month.abb)),
+           site = "historic") %>%
+    filter(year < 2020)
+  
+}

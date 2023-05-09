@@ -1,0 +1,95 @@
+---
+title: "fit_results"
+output: html_document
+date: "2023-05-08"
+---
+
+```{r setup, include = FALSE, echo = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Fitted trajectories
+
+
+```{r, echo = FALSE, fig.width = 10}
+print(paste0(ifelse(deterministic, "Deterministic", "Stochastic"),
+             " model ran with assumptions: ", assumptions))
+
+if (assumptions == "fit_no_deaths") {
+  plot <- plot_serology(samples, data_fit)
+} else {
+  plot <- plot_serology(samples, data_fit) +
+    plot_deaths(samples, data_fit, age = FALSE)
+}
+
+plot
+
+```
+
+
+## Inferred transmissibility and severity
+
+
+```{r, echo = FALSE, fig.width = 10}
+plot_rt(dat) / plot_severity(dat, FALSE, "2020-03-15")
+```
+
+
+```{r, echo = FALSE, fig.width = 10}
+S_classes <- paste0("S_", seq(0, 75, 5))
+N_total <- pars$base$population %>%
+  mutate(age = S_classes)
+
+susceptible <- NULL
+dead <- NULL
+for(i in S_classes) {
+  n <- N_total$n[N_total$age == i]
+  tmp <- summarise_trajectory(dat$fit$samples, i) %>%
+    mutate_if(is.numeric, list(~ . / n))
+  
+  susceptible <- rbind(susceptible, tmp)
+  
+  tmp <- summarise_trajectory(dat$fit$samples, gsub("S", "D", i)) %>%
+    mutate_if(is.numeric, list(~ . / n))
+  
+  dead <- rbind(dead, tmp)
+}
+
+S <- ggplot(susceptible, aes(date)) +
+  geom_line(aes(y = mean, col = state), linetype = 2, linewidth = 0.4) +
+  geom_ribbon(aes(ymin = lb, ymax = ub, fill = state), alpha = 0.1) +
+  scale_color_viridis_d() +
+  scale_fill_viridis_d() +
+  labs(x = "", y = "Susceptible (% population)") +
+  scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1),
+                     labels = scales::percent_format(accuracy = 1)) +
+  theme_minimal() +
+  theme(axis.line = element_line(),
+        axis.text.x = element_text(angle = 45, vjust = 0.7),
+        legend.title = element_blank())
+
+D <- ggplot(dead, aes(date)) +
+  geom_line(aes(y = mean, col = state), linetype = 2, linewidth = 0.4) +
+  geom_ribbon(aes(ymin = lb, ymax = ub, fill = state), alpha = 0.1) +
+  scale_color_viridis_d() +
+  scale_fill_viridis_d() +
+  labs(x = "", y = "Cumulative deaths (% population)") +
+  scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1),
+                     labels = scales::percent_format(accuracy = 1)) +
+  theme_minimal() +
+  theme(axis.line = element_line(),
+        axis.text.x = element_text(angle = 45, vjust = 0.7),
+        legend.title = element_blank())
+
+S + D
+```
+
+
+## Convergence diagnostics
+
+```{r, echo = FALSE}
+
+print(get_convergence_diagnostic(dat))
+```

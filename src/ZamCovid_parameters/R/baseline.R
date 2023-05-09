@@ -1,5 +1,6 @@
 
-create_baseline <- function(region, date, epoch_dates, pars, assumptions) {
+create_baseline <- function(region, date, epoch_dates, pars, assumptions,
+                            historic_deaths = NULL) {
   
   pars_info <- pars$info
   pars_vcv <- pars$proposal
@@ -37,6 +38,66 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions) {
     g <-  n_zambia / sum(population$n)
     n_kabwe <- ceiling(230802 * g)
     population$n <- round((population$n / sum(population$n)) * n_kabwe)
+    
+    
+    # Now set baseline deaths, given assumptions
+    if (assumptions == "base_deaths_low") {
+      inflate <- 1 / 0.75
+    } else if (assumptions == "base_deaths_high") {
+      inflate <- 1 / 0.25
+    } else {
+      inflate <- 1 / 0.433
+    }
+    
+    historic_deaths <- infer_baseline_deaths(historic_deaths, date,
+                                             inflate = inflate)
+    base_death_date <-
+      ZamCovid:::numeric_date(historic_deaths$expected_deaths$date)
+    base_death_date[1] <- 0
+    base_death_value <- historic_deaths$expected_deaths$rate
+    
+    
+    # Lastly, set target p_G_D informed by IFR estimates with seroreversion
+    # from Brazeau et al. https://www.nature.com/articles/s43856-022-00106-7
+    # Their estimates as for 19 age brackets; we only have 16 so will weight
+    # 75_plus by age distribution
+    brazeau_ifr <- c(0, 0.0001, 0.0001, 0.0002, 0.0003, 0.0004, 0.0006, 0.001,
+                     0.0016, 0.0024, 0.0038, 0.0059, 0.0092, 0.0143, 0.0223,
+                     0.0347, 0.0541, 0.0843, 0.164)
+    # 75+ Zambia population estimates from US IDB (https://www.census.gov)
+    ifr_75_plus <- data.frame(n = c(99000, 53004, 21234, 5617)) %>%
+      mutate(ifr = (tail(brazeau_ifr, 4) * n))
+    ifr_75_plus <- sum(ifr_75_plus$ifr) / sum(ifr_75_plus$n)
+    
+    target_p_G_D <- data.frame(p_C = t(severity_data[1, 2:17])) %>%
+      `colnames<-`("p_C") %>%
+      mutate(ifr = c(brazeau_ifr[1:15], ifr_75_plus),
+             p_G_D = ifr / p_C)
+    
+    severity_data[severity_data$Name == "p_G_D", 2:length(severity_data)] <- 
+      if (assumptions == "p_G_D_low") {
+        target_p_G_D$p_G_D * 0.9
+      } else if (assumptions == "p_G_D_high") {
+        target_p_G_D$p_G_D * 1.1
+      } else {
+        target_p_G_D$p_G_D
+      }
+    
+    
+    ## Lastly, set assumptions of infection-induced immunity waning
+    ## Central assumption based on estimate of 24.7% remaining effectively
+    ## protected at 12 months in Bobrovitz et al.
+    ## https://linkinghub.elsevier.com/retrieve/pii/S1473309922008015
+    imm_waning <- data.frame(parameter = "gamma_R", 
+                             value = 1 / (2 * 365))
+    if (assumptions == "imm_waning_low") {
+      imm_waning$value <- 1 / (1 * 365)
+    } else if (assumptions == "imm_waning_high") {
+      imm_waning$value <- 1 / (3 * 365)
+    }
+    progression_data <- rbind(progression_data, imm_waning)
+    
+    rmarkdown::render("historic_deaths.Rmd")
   }
   
   ## 3. Set-up basic model parameters ----
@@ -52,7 +113,7 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions) {
     # direct
     "start_date", beta_names,
     # severity
-    "p_G_D"
+    "p_G_D", "alpha_D"
   )
   stopifnot(setequal(to_fit_all, names(pars_info)))
   
@@ -185,6 +246,8 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions) {
     sens_and_spec = sens_and_spec,
     seed_size = seed_size,
     seed_pattern = seed_pattern,
+    base_death_date = base_death_date,
+    base_death_value = unname(base_death_value),
     
     rel_severity = rel_severity,
     rel_gamma_wildtype = rel_gamma_wildtype,

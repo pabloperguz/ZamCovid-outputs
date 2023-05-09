@@ -16,10 +16,10 @@ plot_fit_traces <- function(samples) {
     k
   }
   
-  i <- reorder_beta(colnames(samples$pars))
-  pars <- samples$pars[, i]
+  i <- reorder_beta(colnames(samples$pars_full))
+  pars <- samples$pars_full[, i]
   nms <- colnames(pars)
-  probs <- samples$probabilities
+  probs <- samples$probabilities_full
   
   op <- par(no.readonly = TRUE)
   on.exit(par(op))
@@ -45,12 +45,11 @@ plot_fit_traces <- function(samples) {
             ylab = name, col = cols,
             main = main,
             font.main = 1)
-    rug(samples$iteration[samples$chain == 1], ticksize = 0.1)
   }
   
   new_grid(length(nms), FALSE)
   for (nm in nms) {
-    plot_traces1(samples$pars[, nm], nm)
+    plot_traces1(samples$pars_full[, nm], nm)
   }
   plot_traces1(probs[, "log_likelihood"], "log_likelihood")
 }
@@ -142,9 +141,10 @@ plot_deaths <- function(samples, data_fit, age = TRUE) {
     } else {
       paste0("deaths_", c("all", "hosp"))
     }
+  
   data_plot <- data_fit[, c("date", "date_string", which)]
   data_plot$deaths_comm_inc <- data_plot$deaths_all - data_plot$deaths_hosp
-  colnames(data_plot) <- c("date", "date_string", "deaths_all",
+  colnames(data_plot) <- c("date", "date_string", "deaths_all_inc",
                            "deaths_hosp_inc", "deaths_comm_inc")
   
   states <- samples$trajectories$state
@@ -163,14 +163,13 @@ plot_deaths <- function(samples, data_fit, age = TRUE) {
     )
   }
   
-  traj <- c("deaths_hosp_inc", "deaths_comm_inc")
+  traj <- c("deaths_all_inc")
   df <- NULL
   for (t in traj) {
     ret <- traj_to_long(t, states[t, , -1])
     df <- rbind(df, ret)
   }
   
-  # res_infs <- sample$trajectories$state["infections", , ] / p$N_tot_all * 100
   df$state <- factor(df$state, levels = unique(df$state))
   
   ggplot(df, aes(x = date)) +
@@ -223,10 +222,10 @@ plot_rt <- function(dat) {
 }
 
 
-plot_severity <- function(dat) {
+plot_severity <- function(dat, age = TRUE, xmin = "2020-04-01") {
   
-  ifr <- get_severity(dat$fit$severity, "ifr") %>%
-    filter(date >= as.Date("2020-02-22"))
+  ifr <- get_severity(dat$fit$severity, "ifr")
+  ifr[ifr$date < as.Date(xmin), c("mean", "lb", "ub")] <- NA_real_
   
   p1 <- ggplot(ifr, aes(date, mean)) +
     geom_line(col = "blue4") +
@@ -240,7 +239,7 @@ plot_severity <- function(dat) {
           axis.text.x = element_text(angle = 45, vjust = 0.7))
   
   ifr_age <- get_severity(dat$fit$severity, "ifr", TRUE) %>%
-    filter(date >= as.Date("2020-04-01")) %>%
+    filter(date >= as.Date(xmin)) %>%
     pivot_longer(!c(date, age), names_to = "estimate") %>%
     group_by(age, estimate) %>%
     summarise(value = mean(value)) %>%
@@ -250,14 +249,19 @@ plot_severity <- function(dat) {
   p2 <- ggplot(ifr_age, aes(y = age, col = age)) +
     geom_pointrange(aes(x = mean, xmin = lb, xmax = ub)) +
     scale_x_continuous(labels = scales::percent_format(),
-                       trans = "log") +
+                       trans = "log",
+                       breaks = c(0, 0.001, 0.01, 0.05, 0.1, 0.2)) +
     labs(x = "Effective IFR", y = "Age group") +
     theme_minimal() +
     theme(axis.line = element_line(),
           axis.text.x = element_text(angle = 45, vjust = 0.7),
           legend.position = "none")
   
-  p1 + p2
+  if (age) {
+    p1 + p2
+  } else {
+    p1
+  }
 }
 
 
@@ -297,6 +301,7 @@ get_severity <- function(severity, what, by_age = FALSE) {
   
   ret
 }
+
 
 get_new_pars <- function(samples, priors) {
   
