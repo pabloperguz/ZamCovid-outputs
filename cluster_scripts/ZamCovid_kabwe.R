@@ -85,6 +85,31 @@ rm(list = setdiff(ls(), env_keep))
 
 #----
 
+
+## 4. ZamCovid_kabwe_sens_analysis ----
+
+# Develop
+orderly::orderly_develop_start("ZamCovid_kabwe_sens_analysis",
+                               parameters = list(date = date,
+                                                 short_run = short_run,
+                                                 deterministic = deterministic),
+                               use_draft = "newer")
+setwd(paste0(root_dir, "ZamCovid_kabwe_sens_analysis"))
+file.edit("script.R")
+# tidy up
+orderly::orderly_develop_clean()
+rm(list = setdiff(ls(), env_keep))
+
+# Run
+orderly::orderly_run("ZamCovid_kabwe_sens_analysis",
+                     parameters = list(date = date,
+                                       short_run = short_run,
+                                       deterministic = deterministic),
+                     use_draft = "newer")
+rm(list = setdiff(ls(), env_keep))
+
+#----
+
 # To remove failed tasks from draft folder
 orderly::orderly_cleanup(failed_only = TRUE)
 
