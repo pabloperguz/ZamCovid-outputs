@@ -104,3 +104,40 @@ baseline_death_rate <- function(expected_deaths, d) {
     out
   }
 }
+
+
+prior_rename <- function (x, from, to, name = deparse(substitute(x))) {
+  verify_names(x, required = from, allow_extra = TRUE, name = name)
+  i <- match(from, names(x))
+  names(x)[i] <- to
+  x
+}
+
+
+verify_names <- function (x, required = NULL, optional = NULL, allow_extra = FALSE, 
+                          name = deparse(substitute(x))) {
+  nms <- names(x)
+  if (anyDuplicated(nms)) {
+    dups <- unique(nms[duplicated(nms)])
+    stop(sprintf("Duplicate element names in '%s': %s", name, 
+                 paste(squote(dups), collapse = ", ")))
+  }
+  if (!allow_extra) {
+    extra <- setdiff(nms, c(required, optional))
+    if (length(extra) > 0) {
+      stop(sprintf("Extra elements in '%s': %s", name, 
+                   paste(squote(extra), collapse = ", ")))
+    }
+  }
+  msg <- setdiff(required, nms)
+  if (length(msg) > 0) {
+    stop(sprintf("Elements missing from '%s': %s", name, 
+                 paste(squote(msg), collapse = ", ")))
+  }
+  invisible(x)
+}
+
+
+squote <- function (x) {
+  sprintf("'%s'", x)
+}

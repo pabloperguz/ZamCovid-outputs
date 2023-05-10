@@ -156,7 +156,7 @@ priors_wide_to_long <- function(d) {
           shape = "gamma_shape",
           shape1 = "beta_shape1",
           shape2 = "beta_shape2")
-  d <- sircovid:::rename(d, names(tr), tr)
+  d <- prior_rename(d, names(tr), tr)
   d <- d[c("region", "type", tr)]
   
   extra <- data.frame(
