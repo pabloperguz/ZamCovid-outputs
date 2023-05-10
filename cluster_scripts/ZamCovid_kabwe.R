@@ -123,11 +123,11 @@ orderly::orderly_cleanup(failed_only = TRUE)
 ## 0. Install ZamCovid ----
 # Sys.unsetenv("GITHUB_PAT")
 # remotes::install_github("pabloperguz/ZamCovid",
-#                         ref = "baseline-deaths",
+#                         ref = "master",
 #                         force = TRUE)
 # 
 # remotes::install_github("pabloperguz/ZamCovid",
-#                         ref = "baseline-deaths",
+#                         ref = "master",
 #                         force = TRUE,
 #                         lib = "Z:/Pablo/ZamCovid-outputs/contexts/lib/windows/4.2")
 
