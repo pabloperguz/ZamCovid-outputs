@@ -7,31 +7,5 @@ fields:
   comment:
     required: false
 
-remote:
-  dide:
-    driver: orderlyweb::orderlyweb_remote
-    args:
-      host: ncov.dide.ic.ac.uk
-      port: 443
-      token: $VAULT_AUTH_GITHUB_TOKEN
-    primary: true
-    default_branch_only: true
-    teams_url: $TEAMS_URL
-  dev:
-    driver: orderlyweb::orderlyweb_remote
-    args:
-      host: ncov-dev.dide.ic.ac.uk
-      port: 443
-      token: $VAULT_AUTH_GITHUB_TOKEN
-
-vault:
-  addr: https://vault.dide.ic.ac.uk:8200
-
-minimum_orderly_version: 1.1.26
-
-changelog:
-  update:
-    public: false
-
 global_resources:
   global

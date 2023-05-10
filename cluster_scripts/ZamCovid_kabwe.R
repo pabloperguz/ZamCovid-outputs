@@ -10,7 +10,10 @@ root_dir <- paste0(orderly::orderly_config()$root, "/src/")
 short_run <- TRUE
 date <- "2021-08-01"
 assumptions <- "central"
-## can be: central, fit_no_deaths, low_ifr, base_deaths_low, base_deaths_high
+## can be: central, fit_no_deaths,
+##         base_deaths_high, base_deaths_low,
+##         imm_waning_high, imm_waning_low,
+##         p_G_D_high, p_G_D_low
 deterministic <- TRUE
 env_keep <- c("root_dir", "short_run", "date", "assumptions",
               "deterministic", "env_keep")
@@ -79,6 +82,31 @@ orderly::orderly_run("ZamCovid_fits",
                                        date = date,
                                        short_run = short_run,
                                        assumptions = assumptions,
+                                       deterministic = deterministic),
+                     use_draft = "newer")
+rm(list = setdiff(ls(), env_keep))
+
+#----
+
+
+## 4. ZamCovid_kabwe_sens_analysis ----
+
+# Develop
+orderly::orderly_develop_start("ZamCovid_kabwe_sens_analysis",
+                               parameters = list(date = date,
+                                                 short_run = short_run,
+                                                 deterministic = deterministic),
+                               use_draft = "newer")
+setwd(paste0(root_dir, "ZamCovid_kabwe_sens_analysis"))
+file.edit("script.R")
+# tidy up
+orderly::orderly_develop_clean()
+rm(list = setdiff(ls(), env_keep))
+
+# Run
+orderly::orderly_run("ZamCovid_kabwe_sens_analysis",
+                     parameters = list(date = date,
+                                       short_run = short_run,
                                        deterministic = deterministic),
                      use_draft = "newer")
 rm(list = setdiff(ls(), env_keep))
