@@ -104,3 +104,11 @@ baseline_death_rate <- function(expected_deaths, d) {
     out
   }
 }
+
+
+prior_rename <- function (x, from, to, name = deparse(substitute(x))) {
+  verify_names(x, required = from, allow_extra = TRUE, name = name)
+  i <- match(from, names(x))
+  names(x)[i] <- to
+  x
+}
