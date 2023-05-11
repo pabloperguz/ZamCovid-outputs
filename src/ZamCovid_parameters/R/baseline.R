@@ -50,7 +50,7 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     } else if (assumptions == "base_deaths_high") {
       deaths_observed <- 0.3 # high proportion (0.7) unobserved
     } else {
-      deaths_observed <- 0.433 # 0.567 unobserved crude estimation comparing
+      deaths_observed <- 0.75 #0.433 # 0.567 unobserved crude estimation comparing
                                # available timeseries vs linelist in 2020
     }
     
@@ -112,8 +112,6 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     # but their population was CHR and CHW.
     # (https://www.thelancet.com/journals/lanhl/article/PIIS2666-7568(21)00282-8/fulltext)
     serorev <- data.frame(parameter = "gamma_sero_pos", value = 1 / 242.5)
-    ## TODO: this should help capture seroprevalence better
-    # serorev <- data.frame(parameter = "gamma_sero_pos", value = 1 / 365)
     if (assumptions == "serorev_fast") {
       serorev$value <- 1 / (242.5 * 0.8)
     } else if (assumptions == "serorev_slow") {
