@@ -67,6 +67,14 @@ depends:
      id: latest(parameter:assumptions == "serorev_slow" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
      use:
         fits/serorev_slow_fits.rds: outputs/fit.rds
+ - ZamCovid_fits:
+     id: latest(parameter:assumptions == "sero_sens_low" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
+     use:
+        fits/sero_sens_low_fits.rds: outputs/fit.rds
+ - ZamCovid_fits:
+     id: latest(parameter:assumptions == "sero_sens_high" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
+     use:
+        fits/sero_sens_high_fits.rds: outputs/fit.rds
 
 requester: ZamCovid
 author: Pablo
