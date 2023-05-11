@@ -15,6 +15,7 @@ assumptions <- "serorev_slow"
 ##         imm_waning_high, imm_waning_low,
 ##         p_G_D_high, p_G_D_low,
 ##         serorev_slow, serorev_fast
+##         sero_sens_low, sero_sens_high
 deterministic <- TRUE
 env_keep <- c("root_dir", "short_run", "date", "assumptions",
               "deterministic", "env_keep")

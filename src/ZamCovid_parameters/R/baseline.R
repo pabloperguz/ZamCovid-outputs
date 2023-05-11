@@ -48,6 +48,9 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     } else {
       deaths_observed <- 0.433 # 0.567 unobserved crude estimation comparing
                                # available timeseries vs linelist in 2020
+      ## TODO: at the moment, this explains better the deaths data, but 
+      ##       does not allow the model enough freedom to capture seroprevalence
+      # deaths_observed <- 0.75
     }
     
     historic_deaths <- infer_baseline_deaths(historic_deaths, date,
@@ -94,6 +97,8 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     # protected at 12 months in Bobrovitz et al.
     # https://linkinghub.elsevier.com/retrieve/pii/S1473309922008015
     imm_waning <- data.frame(parameter = "gamma_R", value = 1 / (2 * 365))
+    ## TODO: at the moment, exp 1 year gives the better fit
+    # imm_waning <- data.frame(parameter = "gamma_R", value = 1 / (1 * 365))
     if (assumptions == "imm_waning_low") {
       imm_waning$value <- 1 / (1 * 365)
     } else if (assumptions == "imm_waning_high") {
@@ -105,6 +110,8 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     # but their population was CHR and CHW.
     # (https://www.thelancet.com/journals/lanhl/article/PIIS2666-7568(21)00282-8/fulltext)
     serorev <- data.frame(parameter = "gamma_sero_pos", value = 1 / 242.5)
+    ## TODO: this should help capture seroprevalence better
+    # serorev <- data.frame(parameter = "gamma_sero_pos", value = 1 / 365)
     if (assumptions == "serorev_fast") {
       serorev$value <- 1 / (242.5 * 0.8)
     } else if (assumptions == "serorev_slow") {
@@ -149,13 +156,14 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
   mean_C_1 <- 2.14
   mean_C_2 <- 1.86
   rel_C_2_wildtype <- (mean_C_2 + (1 - rel_si_wildtype) * mean_C_1) / mean_C_2
-  mean_SI <- mean_E + (mean_P^2 + mean_C_1 + mean_C_2^2) / (mean_P + mean_C_1)
+  ## TODO: check SI, this might be a bit short at 4.9 days atm!
+  mean_SI <- mean_E + (mean_P^2 + mean_P * mean_C_1 + mean_C_2^2) / (mean_P + mean_C_1)
   rel_gamma_wildtype <- list(E = 1 / rel_si_wildtype,
                              A = 1 / rel_si_wildtype,
                              P = 1 / rel_si_wildtype,
                              C_1 = 1 / rel_si_wildtype,
                              C_2 = 1 / rel_C_2_wildtype)
-  
+  browser() # 5.2 / mean_SI
   
   ## 5. Set-up vaccination parameters and assumptions ----
   vaccine_eligibility_min_age <- 5
@@ -215,8 +223,13 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     rel_severity <- rel_severity$central
   }
   
-  # If required for SA, change Se&Sp parameters here
+  ## Set serology assay sensitivity assumptions
   sens_and_spec <- ZamCovid::ZamCovid_parameters_sens_and_spec()
+  if (assumptions == "sero_sens_low") {
+    sens_and_spec$sero_sensitivity <- 0.754
+  } else if (assumptions == "sero_sens_high") {
+    sens_and_spec$sero_sensitivity <- 0.99
+  }
   
   ## Note that vaccine_uptake[i, j] is proportional uptake of dose j for group i 
   vaccine_uptake <- 
