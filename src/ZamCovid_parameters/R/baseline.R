@@ -40,17 +40,18 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     population$n <- round((population$n / sum(population$n)) * n_kabwe)
     
     
-    # Now set baseline deaths, given assumptions
+    # Now set assumptions of what proportion of baseline deaths are observed
     if (assumptions == "base_deaths_low") {
-      inflate <- 1 / 0.75
+      deaths_observed <- 0.75 # low proportion (0.25) unobserved
     } else if (assumptions == "base_deaths_high") {
-      inflate <- 1 / 0.25
+      deaths_observed <- 0.3 # high proportion (0.7) unobserved
     } else {
-      inflate <- 1 / 0.433
+      deaths_observed <- 0.433 # 0.567 unobserved crude estimation comparing
+                               # available timeseries vs linelist in 2020
     }
     
     historic_deaths <- infer_baseline_deaths(historic_deaths, date,
-                                             inflate = inflate)
+                                             inflate = 1 / deaths_observed)
     base_death_date <-
       ZamCovid:::numeric_date(historic_deaths$expected_deaths$date)
     base_death_date[1] <- 0
@@ -82,7 +83,6 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
       } else {
         target_p_G_D$p_G_D
       }
-    
     
     ## Lastly, set assumptions of infection-induced immunity waning
     ## Central assumption based on estimate of 24.7% remaining effectively
