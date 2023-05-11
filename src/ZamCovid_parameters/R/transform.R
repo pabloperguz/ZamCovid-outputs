@@ -67,9 +67,7 @@ compute_progression <- function(pars, progression_data) {
   progression$k_PCR_pre <- 1
   progression$k_PCR_pos <- 1
   progression$k_sero_pos <- 1
-  ## Krutikov et al. 2022 report median time to sero-rev with Abbott 242.5 days
-  ## (https://www.thelancet.com/journals/lanhl/article/PIIS2666-7568(21)00282-8/fulltext)
-  progression$gamma_sero_pos <- 1 / 242.5
+  progression$gamma_sero_pos <- gammas$gamma_sero_pos
   
   progression
 }

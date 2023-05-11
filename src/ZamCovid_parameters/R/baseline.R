@@ -29,11 +29,11 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
   if (region == "kabwe") {
     # This is a hack!!!
     # We don't have population breakdown from Kabwe!
-    # n corresponds to national population from 2018, at a point the population
-    # in Kabwe District was reported to be 230,802
-    
-    # New 2022 census indicates a national population of 19,610,769
-    # We'll assume the same growth for Kabwe and same age distribution
+    # In 2018, population in Kabwe District was reported to be 230,802 and 
+    # 18,383,956 nationally (which is the sum of `population$n`).
+    # New 2022 census indicates the national population is 19,610,769.
+    # We'll assume the same growth for Kabwe and same age distribution as 
+    # nationally.
     n_zambia <- 19610769
     g <-  n_zambia / sum(population$n)
     n_kabwe <- ceiling(230802 * g)
@@ -58,15 +58,18 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     base_death_value <- historic_deaths$expected_deaths$rate
     
     
-    # Lastly, set target p_G_D informed by IFR estimates with seroreversion
+    # Now, set target p_G_D informed by IFR estimates with seroreversion
     # from Brazeau et al. https://www.nature.com/articles/s43856-022-00106-7
-    # Their estimates as for 19 age brackets; we only have 16 so will weight
-    # 75_plus by age distribution
     brazeau_ifr <- c(0, 0.0001, 0.0001, 0.0002, 0.0003, 0.0004, 0.0006, 0.001,
                      0.0016, 0.0024, 0.0038, 0.0059, 0.0092, 0.0143, 0.0223,
                      0.0347, 0.0541, 0.0843, 0.164)
-    # 75+ Zambia population estimates from US IDB (https://www.census.gov)
-    ifr_75_plus <- data.frame(n = c(99000, 53004, 21234, 5617)) %>%
+    
+    # Their estimates are for 19 age brackets; we only have 16 so will aggregate
+    # 75_plus weighting by age distribution using the breakdown of 75+'s as per
+    # population estimates from US IDB (https://www.census.gov)
+    n_75_plus_brackets <- c(99000, 53004, 21234, 5617)
+    
+    ifr_75_plus <- data.frame(n = n_75_plus_brackets) %>%
       mutate(ifr = (tail(brazeau_ifr, 4) * n))
     ifr_75_plus <- sum(ifr_75_plus$ifr) / sum(ifr_75_plus$n)
     
@@ -84,18 +87,30 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
         target_p_G_D$p_G_D
       }
     
-    ## Lastly, set assumptions of infection-induced immunity waning
-    ## Central assumption based on estimate of 24.7% remaining effectively
-    ## protected at 12 months in Bobrovitz et al.
-    ## https://linkinghub.elsevier.com/retrieve/pii/S1473309922008015
-    imm_waning <- data.frame(parameter = "gamma_R", 
-                             value = 1 / (2 * 365))
+    ## Lastly, set assumptions of infection-induced immunity waning and
+    ## seroreversion/
+    
+    # Immunity waning assumption based on estimate of 24.7% remaining effectively
+    # protected at 12 months in Bobrovitz et al.
+    # https://linkinghub.elsevier.com/retrieve/pii/S1473309922008015
+    imm_waning <- data.frame(parameter = "gamma_R", value = 1 / (2 * 365))
     if (assumptions == "imm_waning_low") {
       imm_waning$value <- 1 / (1 * 365)
     } else if (assumptions == "imm_waning_high") {
       imm_waning$value <- 1 / (3 * 365)
     }
     progression_data <- rbind(progression_data, imm_waning)
+    
+    # Krutikov et al. 2022 report median time to sero-rev with Abbott 242.5 days,
+    # but their population was CHR and CHW.
+    # (https://www.thelancet.com/journals/lanhl/article/PIIS2666-7568(21)00282-8/fulltext)
+    serorev <- data.frame(parameter = "gamma_sero_pos", value = 1 / 242.5)
+    if (assumptions == "serorev_fast") {
+      serorev$value <- 1 / (242.5 * 0.8)
+    } else if (assumptions == "serorev_slow") {
+      serorev$value <- 1 / (242.5 * 1.2)
+    }
+    progression_data <- rbind(progression_data, serorev)
     
     rmarkdown::render("historic_deaths.Rmd")
   }
