@@ -165,7 +165,7 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
                              P = 1 / rel_si_wildtype,
                              C_1 = 1 / rel_si_wildtype,
                              C_2 = 1 / rel_C_2_wildtype)
-  browser() # 5.2 / mean_SI
+  # browser() # 5.2 / mean_SI
   
   ## 5. Set-up vaccination parameters and assumptions ----
   vaccine_eligibility_min_age <- 5
