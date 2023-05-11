@@ -36,6 +36,10 @@ depends:
      use:
         fits/central_fits.rds: outputs/fit.rds
  - ZamCovid_fits:
+     id: latest(parameter:assumptions == "best_fit" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
+     use:
+        fits/best_fit_fits.rds: outputs/fit.rds
+ - ZamCovid_fits:
      id: latest(parameter:assumptions == "base_deaths_high" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
      use:
         fits/base_deaths_high_fits.rds: outputs/fit.rds
