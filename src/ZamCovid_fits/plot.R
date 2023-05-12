@@ -230,7 +230,7 @@ plot_severity <- function(dat, age = TRUE, xmin = "2020-04-01") {
   p1 <- ggplot(ifr, aes(date, mean)) +
     geom_line(col = "blue4") +
     geom_ribbon(aes(ymin = lb, ymax = ub), alpha = 0.3, fill = "blue4") +
-    scale_y_continuous(expand = c(0, 0), limits = c(0, 0.01),
+    scale_y_continuous(expand = c(0, 0), limits = c(0, 0.02),
                        labels = scales::percent_format()) +
     scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
     labs(y = "Effective IFR", x = "") +
