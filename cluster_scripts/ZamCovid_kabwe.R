@@ -10,7 +10,7 @@ root_dir <- paste0(orderly::orderly_config()$root, "/src/")
 short_run <- TRUE
 date <- "2021-08-01"
 assumptions <- "central"
-## can be: central, best_fit,
+## can be: central, fit_no_deaths,
 ##         base_deaths_high, base_deaths_low,
 ##         imm_waning_high, imm_waning_low,
 ##         p_G_D_high, p_G_D_low,
