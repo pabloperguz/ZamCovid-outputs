@@ -131,8 +131,8 @@ set_control <- function(short_run, deterministic, n_particles = 192,
   
   ## MCMC control (only applies if short_run = FALSE)
   if (deterministic) {
-    burnin <- 1000
-    n_mcmc <- 8000
+    burnin <- 5000
+    n_mcmc <- 15000
     n_sample <- 1000
     n_chains <- 8
   } else {
@@ -272,6 +272,11 @@ parse_data <- function(dat, fit_sero = FALSE, fit_deaths = FALSE,
       stopifnot(!all(is.na(dat$deaths_all)))
       dat[, deaths_age_bands] <- NA_integer_
     }
+    
+    ## NA deaths data in early 2020 to avoid inferring an earlier than
+    ## expected start to the epidemic
+    dat[as.Date(dat$date_string) < as.Date("2020-03-15"),
+        c("deaths_all", deaths_age_bands)] <- NA_integer_
     
   } else {
     dat[, c("deaths_all", deaths_age_bands)] <- NA_integer_

@@ -11,9 +11,10 @@ short_run <- TRUE
 date <- "2021-08-01"
 assumptions <- "central"
 ## can be: central, fit_no_deaths,
-##         base_deaths_high, base_deaths_low,
 ##         imm_waning_high, imm_waning_low,
-##         p_G_D_high, p_G_D_low
+##         p_G_D_high, p_G_D_low,
+##         serorev_slow, serorev_fast
+##         sero_sens_low, sero_sens_high
 deterministic <- TRUE
 env_keep <- c("root_dir", "short_run", "date", "assumptions",
               "deterministic", "env_keep")
@@ -123,11 +124,11 @@ orderly::orderly_cleanup(failed_only = TRUE)
 ## 0. Install ZamCovid ----
 # Sys.unsetenv("GITHUB_PAT")
 # remotes::install_github("pabloperguz/ZamCovid",
-#                         ref = "baseline-deaths",
+#                         ref = "master",
 #                         force = TRUE)
 # 
 # remotes::install_github("pabloperguz/ZamCovid",
-#                         ref = "baseline-deaths",
+#                         ref = "master",
 #                         force = TRUE,
 #                         lib = "Z:/Pablo/ZamCovid-outputs/contexts/lib/windows/4.2")
 

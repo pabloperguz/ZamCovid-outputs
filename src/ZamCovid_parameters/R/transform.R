@@ -12,6 +12,7 @@ compute_severity <- function(pars, severity_data) {
   p_H_D_value <- 0 # Probability death in hospital
   
   # e. Simplifying assumption - note sero_sensitivity is 0.831
+  ## TODO: this should not be the case; we are saying ALL go from sero_pre into sero_pos
   severity_data[severity_data$Name == "p_sero_pos", 2:17] <- 1
   
   severity <- ZamCovid::ZamCovid_parameters_severity(
@@ -41,35 +42,36 @@ compute_progression <- function(pars, progression_data) {
                      "parameter"]
   gammas <- as.list(gammas)
   
-  gamma_E <- gammas$gamma_E
+  gamma_E_value <- gammas$gamma_E
   gamma_H_R_value <- gammas$gamma_H_R
   gamma_H_D_value <- gammas$gamma_H_D
   gamma_PCR_pre_value <- 1 / 2
   gamma_PCR_pos_value <- 0.083
+  
+  gamma_R_value <- gammas$gamma_R
+  gamma_sero_pos_value <- gammas$gamma_sero_pos
   
   # Time to diagnosis if admitted without test
   gamma_U_value <- 1 / 3
   
   progression <- ZamCovid::ZamCovid_parameters_progression(
     dt,
-    gamma_E = list(value = gamma_E),
+    gamma_E = list(value = gamma_E_value),
     gamma_H_D = list(value = gamma_H_D_value),
     gamma_H_R = list(value = gamma_H_R_value),
     gamma_U = list(value = gamma_U_value),
     gamma_PCR_pre = list(value = gamma_PCR_pre_value),
-    gamma_PCR_pos = list(value = gamma_PCR_pos_value)
+    gamma_PCR_pos = list(value = gamma_PCR_pos_value),
+    gamma_R = list(value = gamma_R_value),
+    gamma_sero_pos = list(value = gamma_sero_pos_value)
   )
   progression[k_parameters$parameter] <- k_parameters$value
   
-  progression$gamma_R <- gammas$gamma_R
   progression$k_sero_pre <- 1
   progression$gamma_sero_pre <- 1 / 13
   progression$k_PCR_pre <- 1
   progression$k_PCR_pos <- 1
   progression$k_sero_pos <- 1
-  ## Krutikov et al. 2022 report median time to sero-rev with Abbott 242.5 days
-  ## (https://www.thelancet.com/journals/lanhl/article/PIIS2666-7568(21)00282-8/fulltext)
-  progression$gamma_sero_pos <- 1 / 242.5
   
   progression
 }

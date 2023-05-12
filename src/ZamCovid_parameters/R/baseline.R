@@ -29,43 +29,44 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
   if (region == "kabwe") {
     # This is a hack!!!
     # We don't have population breakdown from Kabwe!
-    # n corresponds to national population from 2018, at a point the population
-    # in Kabwe District was reported to be 230,802
-    
-    # New 2022 census indicates a national population of 19,610,769
-    # We'll assume the same growth for Kabwe and same age distribution
+    # In 2018, population in Kabwe District was reported to be 230,802 and 
+    # 18,383,956 nationally (which is the sum of `population$n`).
+    # New 2022 census indicates the national population is 19,610,769.
+    # We'll assume the same growth for Kabwe and same age distribution as 
+    # nationally.
     n_zambia <- 19610769
     g <-  n_zambia / sum(population$n)
     n_kabwe <- ceiling(230802 * g)
     population$n <- round((population$n / sum(population$n)) * n_kabwe)
     
     
-    # Now set baseline deaths, given assumptions
-    if (assumptions == "base_deaths_low") {
-      inflate <- 1 / 0.75
-    } else if (assumptions == "base_deaths_high") {
-      inflate <- 1 / 0.25
-    } else {
-      inflate <- 1 / 0.433
-    }
-    
+    # Now set assumptions of what proportion of baseline deaths are observed
+    ## TODO: at the moment, 0.75 explains better the deaths data. A crude
+    ##       empiric estimation is 0.567 unobserved deaths comparing
+    ##       available timeseries vs linelist in 2020. Will need to
+    ##       properly investigate and perhaps within replacement function
+    ##       could do pmin(base_death, observed$deaths_all)
+    deaths_observed <- 0.75 # 0.433
     historic_deaths <- infer_baseline_deaths(historic_deaths, date,
-                                             inflate = inflate)
+                                             inflate = 1 / deaths_observed)
     base_death_date <-
       ZamCovid:::numeric_date(historic_deaths$expected_deaths$date)
     base_death_date[1] <- 0
     base_death_value <- historic_deaths$expected_deaths$rate
     
     
-    # Lastly, set target p_G_D informed by IFR estimates with seroreversion
+    # Now, set target p_G_D informed by IFR estimates with seroreversion
     # from Brazeau et al. https://www.nature.com/articles/s43856-022-00106-7
-    # Their estimates as for 19 age brackets; we only have 16 so will weight
-    # 75_plus by age distribution
     brazeau_ifr <- c(0, 0.0001, 0.0001, 0.0002, 0.0003, 0.0004, 0.0006, 0.001,
                      0.0016, 0.0024, 0.0038, 0.0059, 0.0092, 0.0143, 0.0223,
                      0.0347, 0.0541, 0.0843, 0.164)
-    # 75+ Zambia population estimates from US IDB (https://www.census.gov)
-    ifr_75_plus <- data.frame(n = c(99000, 53004, 21234, 5617)) %>%
+    
+    # Their estimates are for 19 age brackets; we only have 16 so will aggregate
+    # 75_plus weighting by age distribution using the breakdown of 75+'s as per
+    # population estimates from US IDB (https://www.census.gov)
+    n_75_plus_brackets <- c(99000, 53004, 21234, 5617)
+    
+    ifr_75_plus <- data.frame(n = n_75_plus_brackets) %>%
       mutate(ifr = (tail(brazeau_ifr, 4) * n))
     ifr_75_plus <- sum(ifr_75_plus$ifr) / sum(ifr_75_plus$n)
     
@@ -83,19 +84,30 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
         target_p_G_D$p_G_D
       }
     
+    ## Lastly, set assumptions of infection-induced immunity waning and
+    ## seroreversion/
     
-    ## Lastly, set assumptions of infection-induced immunity waning
-    ## Central assumption based on estimate of 24.7% remaining effectively
-    ## protected at 12 months in Bobrovitz et al.
-    ## https://linkinghub.elsevier.com/retrieve/pii/S1473309922008015
-    imm_waning <- data.frame(parameter = "gamma_R", 
-                             value = 1 / (2 * 365))
+    # Immunity waning assumption based on estimate of 24.7% remaining effectively
+    # protected at 12 months in Bobrovitz et al.
+    # https://linkinghub.elsevier.com/retrieve/pii/S1473309922008015
+    imm_waning <- data.frame(parameter = "gamma_R", value = 1 / (2 * 365))
     if (assumptions == "imm_waning_low") {
       imm_waning$value <- 1 / (1 * 365)
     } else if (assumptions == "imm_waning_high") {
       imm_waning$value <- 1 / (3 * 365)
     }
     progression_data <- rbind(progression_data, imm_waning)
+    
+    # Krutikov et al. 2022 report median time to sero-rev with Abbott 242.5 days,
+    # but their population was CHR and CHW.
+    # (https://www.thelancet.com/journals/lanhl/article/PIIS2666-7568(21)00282-8/fulltext)
+    serorev <- data.frame(parameter = "gamma_sero_pos", value = 1 / 242.5)
+    if (assumptions == "serorev_fast") {
+      serorev$value <- 1 / (242.5 * 0.8)
+    } else if (assumptions == "serorev_slow") {
+      serorev$value <- 1 / (242.5 * 1.2)
+    }
+    progression_data <- rbind(progression_data, serorev)
     
     rmarkdown::render("historic_deaths.Rmd")
   }
@@ -134,13 +146,14 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
   mean_C_1 <- 2.14
   mean_C_2 <- 1.86
   rel_C_2_wildtype <- (mean_C_2 + (1 - rel_si_wildtype) * mean_C_1) / mean_C_2
-  mean_SI <- mean_E + (mean_P^2 + mean_C_1 + mean_C_2^2) / (mean_P + mean_C_1)
+  ## TODO: check SI, this might be a bit short at 4.9 days atm!
+  mean_SI <- mean_E + (mean_P^2 + mean_P * mean_C_1 + mean_C_2^2) / (mean_P + mean_C_1)
   rel_gamma_wildtype <- list(E = 1 / rel_si_wildtype,
                              A = 1 / rel_si_wildtype,
                              P = 1 / rel_si_wildtype,
                              C_1 = 1 / rel_si_wildtype,
                              C_2 = 1 / rel_C_2_wildtype)
-  
+  # browser() # 5.2 / mean_SI
   
   ## 5. Set-up vaccination parameters and assumptions ----
   vaccine_eligibility_min_age <- 5
@@ -200,8 +213,13 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     rel_severity <- rel_severity$central
   }
   
-  # If required for SA, change Se&Sp parameters here
+  ## Set serology assay sensitivity assumptions
   sens_and_spec <- ZamCovid::ZamCovid_parameters_sens_and_spec()
+  if (assumptions == "sero_sens_low") {
+    sens_and_spec$sero_sensitivity <- 0.754
+  } else if (assumptions == "sero_sens_high") {
+    sens_and_spec$sero_sensitivity <- 0.99
+  }
   
   ## Note that vaccine_uptake[i, j] is proportional uptake of dose j for group i 
   vaccine_uptake <- 
