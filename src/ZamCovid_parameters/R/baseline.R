@@ -41,19 +41,12 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     
     
     # Now set assumptions of what proportion of baseline deaths are observed
-    if (assumptions == "best_fit") {
-      ## TODO: at the moment, this explains better the deaths data, but 
-      ##       does not allow the model enough freedom to capture seroprevalence
-      deaths_observed <- 0.75
-    } else if (assumptions == "base_deaths_low") {
-      deaths_observed <- 0.75 # low proportion (0.25) unobserved
-    } else if (assumptions == "base_deaths_high") {
-      deaths_observed <- 0.3 # high proportion (0.7) unobserved
-    } else {
-      deaths_observed <- 0.75 #0.433 # 0.567 unobserved crude estimation comparing
-                               # available timeseries vs linelist in 2020
-    }
-    
+    ## TODO: at the moment, 0.75 explains better the deaths data. A crude
+    ##       empiric estimation is 0.567 unobserved deaths comparing
+    ##       available timeseries vs linelist in 2020. Will need to
+    ##       properly investigate and perhaps within replacement function
+    ##       could do pmin(base_death, observed$deaths_all)
+    deaths_observed <- 0.75 # 0.433
     historic_deaths <- infer_baseline_deaths(historic_deaths, date,
                                              inflate = 1 / deaths_observed)
     base_death_date <-
@@ -98,10 +91,7 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     # protected at 12 months in Bobrovitz et al.
     # https://linkinghub.elsevier.com/retrieve/pii/S1473309922008015
     imm_waning <- data.frame(parameter = "gamma_R", value = 1 / (2 * 365))
-    if (assumptions == "best_fit") {
-      ## TODO: at the moment, exp 1 year gives the better fit
-      imm_waning <- data.frame(parameter = "gamma_R", value = 1 / (1 * 365))
-    } else if (assumptions == "imm_waning_low") {
+    if (assumptions == "imm_waning_low") {
       imm_waning$value <- 1 / (1 * 365)
     } else if (assumptions == "imm_waning_high") {
       imm_waning$value <- 1 / (3 * 365)
@@ -225,10 +215,7 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
   
   ## Set serology assay sensitivity assumptions
   sens_and_spec <- ZamCovid::ZamCovid_parameters_sens_and_spec()
-  if (assumptions == "best_fit") {
-    ## TODO: this improves the fit to serology atm
-    sens_and_spec$sero_sensitivity <- 0.99
-  } else if (assumptions == "sero_sens_low") {
+  if (assumptions == "sero_sens_low") {
     sens_and_spec$sero_sensitivity <- 0.754
   } else if (assumptions == "sero_sens_high") {
     sens_and_spec$sero_sensitivity <- 0.99
