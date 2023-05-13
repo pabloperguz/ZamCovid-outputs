@@ -76,9 +76,9 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
              p_G_D = ifr / p_C)
     
     severity_data[severity_data$Name == "p_G_D", 2:length(severity_data)] <- 
-      if (assumptions == "p_G_D_low") {
+      if (assumptions == "ifr_low") {
         target_p_G_D$p_G_D * 0.9
-      } else if (assumptions == "p_G_D_high") {
+      } else if (assumptions == "ifr_high") {
         target_p_G_D$p_G_D * 1.1
       } else {
         target_p_G_D$p_G_D
