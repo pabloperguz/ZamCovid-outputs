@@ -91,10 +91,10 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     # protected at 12 months in Bobrovitz et al.
     # https://linkinghub.elsevier.com/retrieve/pii/S1473309922008015
     imm_waning <- data.frame(parameter = "gamma_R", value = 1 / (2 * 365))
-    if (assumptions == "imm_waning_low") {
-      imm_waning$value <- 1 / (1 * 365)
-    } else if (assumptions == "imm_waning_high") {
+    if (assumptions == "imm_waning_slow") {
       imm_waning$value <- 1 / (3 * 365)
+    } else if (assumptions == "imm_waning_fast") {
+      imm_waning$value <- 1 / (1 * 365)
     }
     progression_data <- rbind(progression_data, imm_waning)
     
