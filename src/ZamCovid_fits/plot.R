@@ -172,13 +172,14 @@ plot_deaths <- function(samples, data_fit, age = TRUE) {
   
   df$state <- factor(df$state, levels = unique(df$state))
   
+  ylim <- max(df$ub) * 1.25
+  
   ggplot(df, aes(x = date)) +
     geom_line(aes(y = mean, col = state)) +
     geom_ribbon(aes(ymin = lb, ymax = ub, fill = state), alpha = 0.4) +
     geom_point(aes(y = data, col = state), size = 0.7, alpha = 0.9) +
-    scale_y_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, ylim)) +
     scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
-    facet_wrap(~state, scales = "free_y") +
     labs(x = "", y = "Daily deaths") +
     theme_minimal() +
     theme(legend.position = "none",
