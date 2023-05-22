@@ -76,9 +76,9 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
              p_G_D = ifr / p_C)
     
     severity_data[severity_data$Name == "p_G_D", 2:length(severity_data)] <- 
-      if (assumptions == "p_G_D_low") {
+      if (assumptions == "ifr_low") {
         target_p_G_D$p_G_D * 0.9
-      } else if (assumptions == "p_G_D_high") {
+      } else if (assumptions == "ifr_high") {
         target_p_G_D$p_G_D * 1.1
       } else {
         target_p_G_D$p_G_D
@@ -91,10 +91,10 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     # protected at 12 months in Bobrovitz et al.
     # https://linkinghub.elsevier.com/retrieve/pii/S1473309922008015
     imm_waning <- data.frame(parameter = "gamma_R", value = 1 / (2 * 365))
-    if (assumptions == "imm_waning_low") {
-      imm_waning$value <- 1 / (1 * 365)
-    } else if (assumptions == "imm_waning_high") {
+    if (assumptions == "imm_waning_slow") {
       imm_waning$value <- 1 / (3 * 365)
+    } else if (assumptions == "imm_waning_fast") {
+      imm_waning$value <- 1 / (1 * 365)
     }
     progression_data <- rbind(progression_data, imm_waning)
     

@@ -14,11 +14,10 @@ load_scenarios <- function(dir) {
 extract_trajectories <- function(dir, file) {
   
   scen <- readRDS(file = paste0(dir, file))$fit
+  traj_nms <- c("deaths_all_inc", "sero_pos_over15")
   
-  traj_nms <- c("deaths_all_inc", "sero_pos_15_19", "sero_pos_20_29",
-                "sero_pos_30_39", "sero_pos_40_49", "sero_pos_50_plus")
-  
-  tmp <- lapply(traj_nms, function(x) summarise_trajectory(scen$samples, x))
+  pop <- sum(scen$parameters$base$population[, "n"][4:16])
+  tmp <- lapply(traj_nms, function(x) summarise_trajectory(scen$samples, x, pop))
   tmp <- data.table::rbindlist(tmp)
   trajectories <- tmp
   
@@ -36,7 +35,7 @@ extract_trajectories <- function(dir, file) {
 }
 
 
-summarise_trajectory <- function(sample, nm) {
+summarise_trajectory <- function(sample, nm, pop = NULL) {
   
   if (nm == "ifr") {
     dates <- sample$date[-1]
@@ -44,6 +43,9 @@ summarise_trajectory <- function(sample, nm) {
   } else if (nm %in% c("eff_Rt_general", "Rt_general")) {
     dates <- sample$date[-1, 1]
     state <- sample[[nm]][-1, ]
+  } else if (nm == "sero_pos_over15") {
+    dates <- sample$trajectories$date[-1]
+    state <- t(sample$trajectories$state[nm, , -1]) / pop
   } else {
     dates <- sample$trajectories$date[-1]
     state <- t(sample$trajectories$state[nm, , -1])
@@ -64,4 +66,11 @@ switch_levels <- function(x) {
   y <- lapply(nms, function(z) lapply(x, "[[", z))
   names(y) <- nms
   y
+}
+
+
+unlist_scenarios <- function(x, what) {
+  out <- purrr::map_df(x[[what]], ~as.data.frame(.x), .id = "scenario")
+  out$scenario <- relevel(factor(out$scenario), "central")
+  out
 }
