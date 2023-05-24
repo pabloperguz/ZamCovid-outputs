@@ -55,6 +55,26 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     base_death_value <- historic_deaths$expected_deaths$rate
     
     
+    ## Cross-immunity assumptions
+    # We have a single-strain model that explicitly accounts for protection vs
+    # re-infection after recovery from infection. As a proxy of VOC emergence
+    # the value cross_immunity (% protection conferred) can be time-varying.
+    # Beta was first detected in Zambia on 2020-12-16, but cases had already
+    # been increasing from early December
+    # https://www.cdc.gov/mmwr/volumes/70/wr/mm7008e2.htm
+    # Gill et al. (https://bmjopen.bmj.com/content/12/12/e066763) estimated
+    # Beta detection in Lusaka (mortuaty) peaked in January 2021 and Delta
+    # in June 2021.
+    # Lastly, no reliable data for Omicron emergence. News feed indicates 
+    # first case detected on 2021-12-04
+    # We will assume same values of protections as in England Perez-Guzman et al.
+    # https://www.medrxiv.org/content/10.1101/2023.02.10.23285516v2
+    cross_immunity_date <-
+      c(0, ZamCovid:::numeric_date(c("2020-12-01", "2021-01-31",
+                                     "2021-03-15", "2021-06-30",
+                                     "2021-11-20", "2021-12-31")))
+    cross_immunity_value <- c(1, 1, 0.95, 0.95, 0.85, 0.85, 0.25)
+    
     # Now, set target p_G_D informed by IFR estimates with seroreversion
     # from Brazeau et al. https://www.nature.com/articles/s43856-022-00106-7
     brazeau_ifr <- c(0, 0.0001, 0.0001, 0.0002, 0.0003, 0.0004, 0.0006, 0.001,
@@ -266,6 +286,8 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     seed_pattern = seed_pattern,
     base_death_date = base_death_date,
     base_death_value = unname(base_death_value),
+    cross_immunity_date = cross_immunity_date,
+    cross_immunity_value = cross_immunity_value,
     
     rel_severity = rel_severity,
     rel_gamma_wildtype = rel_gamma_wildtype,

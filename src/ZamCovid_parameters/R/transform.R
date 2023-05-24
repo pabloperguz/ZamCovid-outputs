@@ -96,6 +96,7 @@ make_transform <- function(baseline) {
                 "severity_data", "progression_data",
                 "sens_and_spec", "seed_size", "seed_pattern",
                 "rel_gamma_wildtype", "base_death_date", "base_death_value",
+                "cross_immunity_date", "cross_immunity_value",
                 ## Lots of vaccination things
                 "rel_severity", "vaccine_eligibility_min_age",
                 "vaccine_progression_rate",
@@ -159,6 +160,9 @@ make_transform <- function(baseline) {
         
         base_death_date = baseline$base_death_date,
         base_death_value = baseline$base_death_value,
+        
+        cross_immunity_date = baseline$cross_immunity_date,
+        cross_immunity_value = baseline$cross_immunity_value,
         
         severity = severity,
         progression = progression,
