@@ -46,7 +46,7 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     ##       available timeseries vs linelist in 2020. Will need to
     ##       properly investigate and perhaps within replacement function
     ##       could do pmin(base_death, observed$deaths_all)
-    deaths_observed <- 0.75 # 0.433
+    deaths_observed <- 0.8 # 0.433
     historic_deaths <- infer_baseline_deaths(historic_deaths, date,
                                              inflate = 1 / deaths_observed)
     base_death_date <-
@@ -119,7 +119,7 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
   beta_date <- as.character(
     seq.Date(as.Date("2020-03-01"), as.Date(date), "2 weeks"))
   beta_names <- sprintf("beta%d", seq_along(beta_date))
-  
+
   # Set of parameters that will be fitted for each model type
   to_fit_all <- c(
     # direct
