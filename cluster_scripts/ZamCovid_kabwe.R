@@ -8,7 +8,7 @@
 root_dir <- paste0(orderly::orderly_config()$root, "/src/")
 ## ---------------------------
 short_run <- TRUE
-date <- "2021-12-31"
+date <- "2021-09-30"
 assumptions <- "central"
 ## can be: central,
 ##         fit_serology_only, fit_deaths_only,
