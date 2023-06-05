@@ -1,3 +1,16 @@
+# Get model trajectories into long format tibble
+traj_to_long <- function(t, tmp, dates, data) {
+  data.frame(
+    date = dates,
+    state = t,
+    mean = colMeans(tmp),
+    lb = matrixStats::colQuantiles(tmp, probs = 0.025),
+    ub = matrixStats::colQuantiles(tmp, probs = 0.975),
+    data = data
+  )
+}
+
+
 plot_fit_traces <- function(samples) {
   
   if (is.null(samples$chain)) {
@@ -87,27 +100,19 @@ plot_serology <- function(samples, data_fit,
   sens <- p$sero_sensitivity
   spec <- p$sero_specificity
   
-  # Get model trajectories and calculate seropositivity
-  traj_to_long <- function(t, tmp) {
-    data.frame(
-      date = unique(data_plot$date),
-      state = t,
-      mean = colMeans(tmp),
-      lb = matrixStats::colQuantiles(tmp, probs = 0.025),
-      ub = matrixStats::colQuantiles(tmp, probs = 0.975)
-    )
-  }
-  
   traj <- paste0("sero_pos_", which)
   sero_pos <- samples$trajectories$state[traj, , ]
   
   dates_vect <- unique(data_plot$date)
   df <- NULL
   for (t in traj) {
+    dates <- unique(as.Date(data_plot$date))
+    data <- data_plot %>%
+      filter(state == t)
     n <- p[[paste0("N_tot_", gsub("sero_pos_", "", t))]]
     sero_pos <- states[t, , -1]
     tmp <- ((sens *  sero_pos + (1 - spec) * (n - sero_pos)) / n) - 0.01
-    ret <- traj_to_long(t, tmp)
+    ret <- traj_to_long(t, tmp, dates, data)
     df <- rbind(df, ret)
   }
   
@@ -150,23 +155,12 @@ plot_deaths <- function(samples, data_fit, age = TRUE) {
   states <- samples$trajectories$state
   nms <- rownames(states)
   
-  
-  # Get model trajectories into long format tibble
-  traj_to_long <- function(t, tmp) {
-    data.frame(
-      date = as.Date(data_plot$date_string),
-      state = t,
-      mean = colMeans(tmp),
-      lb = matrixStats::colQuantiles(tmp, probs = 0.025),
-      ub = matrixStats::colQuantiles(tmp, probs = 0.975),
-      data = data_plot[, t]
-    )
-  }
-  
   traj <- c("deaths_all_inc")
+  dates <- as.Date(data_plot$date_string)
   df <- NULL
   for (t in traj) {
-    ret <- traj_to_long(t, states[t, , -1])
+    data <- data_plot[, t]
+    ret <- traj_to_long(t, states[t, , -1], dates, data)
     df <- rbind(df, ret)
   }
   
@@ -263,6 +257,56 @@ plot_severity <- function(dat, age = TRUE, xmin = "2020-04-01") {
   } else {
     p1
   }
+}
+
+
+plot_infection_incidence <- function(dat) {
+  
+  
+  sample <- dat$fit$samples$trajectories$state
+  dates <- ZamCovid:::numeric_date_as_date(dat$fit$samples$trajectories$date)
+  data <- rep(NA_real_, length(dates))
+  
+  inf_traj <- c( "infections_inc", "reinfections_inc")
+  
+  inf <- traj_to_long("infections_inc", 
+                      sample["infections_inc", ,], 
+                      dates, data)
+  
+  reinf <- traj_to_long("reinfections_inc", 
+                        sample["reinfections_inc", ,], 
+                        dates, data)
+  
+  pop <- sum(dat$fit$parameters$base$population$n)
+  
+  p_inf <- ggplot(inf, aes(x = date)) +
+    geom_line(aes(y = (mean / pop) * 1e3)) +
+    geom_ribbon(aes(ymin = (lb / pop) * 1e3,
+                    ymax = (ub / pop) * 1e3), alpha = 0.3) +
+    scale_color_manual(values = "blue4") +
+    scale_fill_manual(values = "blue4") +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+    scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
+    labs(y = "Infection incidence (x 1,000 population)", x = "") +
+    theme_minimal() +
+    theme(axis.line = element_line(),
+          axis.text.x = element_text(angle = 45, vjust = 0.7))
+  
+  p_reinf <- ggplot(reinf, aes(x = date)) +
+    geom_ribbon(aes(ymax = 1, ymin = mean / inf$mean, fill = "1st infections")) +
+    geom_ribbon(aes(ymin = 0, ymax = mean / inf$mean, fill = "Re-infections")) +
+    scale_fill_manual(values = c("royalblue4", "orange2")) +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, 1),
+                       labels = scales::percent_format(accuracy = 1)) +
+    scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
+    labs(y = "% daily infections", x = "") +
+    theme_minimal() +
+    theme(legend.title = element_blank(),
+          legend.position = "top",
+          axis.line = element_line(),
+          axis.text.x = element_text(angle = 45, vjust = 0.7))
+
+  p_inf / p_reinf  
 }
 
 

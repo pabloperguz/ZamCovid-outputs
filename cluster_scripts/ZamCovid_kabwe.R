@@ -161,7 +161,7 @@ obj <- didehpc::queue_didehpc(ctx, config = cfg)
 
 fits <- obj$enqueue(orderly::orderly_run('ZamCovid_fits',
                                          parameters = list(region = "kabwe",
-                                                           date = "2021-08-01",
+                                                           date = "2021-12-31",
                                                            short_run = FALSE,
                                                            deterministic = TRUE,
                                                            assumptions = "central"),

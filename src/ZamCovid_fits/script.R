@@ -41,7 +41,7 @@ png("plots/fits_rt.png", units = "in", width = 6, height = 6, res = 300)
 plot_rt(dat)
 dev.off()
 
-png("plots/pmcmc_traceplots.png", units = "in", width = 10, height = 6, res = 300)
+png("plots/pmcmc_traceplots.png", units = "in", width = 16, height = 12, res = 300)
 plot_fit_traces(dat$fit$samples)
 dev.off()
 
@@ -51,6 +51,10 @@ dev.off()
 
 png("plots/fits_deaths.png", units = "in", width = 10, height = 6, res = 300)
 plot_deaths(samples, data_fit, age = FALSE)
+dev.off()
+
+png("plots/infections_inc.png", units = "in", width = 8, height = 10, res = 300)
+plot_infection_incidence(dat)
 dev.off()
 
 rmarkdown::render("fit_results.Rmd")

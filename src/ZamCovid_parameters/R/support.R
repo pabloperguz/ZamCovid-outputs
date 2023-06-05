@@ -42,7 +42,6 @@ infer_baseline_deaths <- function(historic, date, alpha = 0.95,
     mutate(deaths = floor(deaths * inflate)) %>%
     nest_by(site) %>%
     mutate(model = list(lm(deaths ~ year + month, data = data))) %>%
-    mutate(model = list(lm(deaths ~ year + month, data = data))) %>%
     mutate(sigma = broom::glance(model)$sigma,
            nobs = broom::glance(model)$nobs,
            df = model$df,

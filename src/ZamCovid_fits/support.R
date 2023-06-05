@@ -132,7 +132,7 @@ set_control <- function(short_run, deterministic, n_particles = 192,
   ## MCMC control (only applies if short_run = FALSE)
   if (deterministic) {
     burnin <- 5000
-    n_mcmc <- 15000
+    n_mcmc <- 30000
     n_sample <- 1000
     n_chains <- 8
   } else {
