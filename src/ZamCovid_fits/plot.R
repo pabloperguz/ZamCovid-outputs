@@ -138,21 +138,18 @@ plot_serology <- function(samples, data_fit,
 }
 
 
-plot_deaths <- function(samples, data_fit, age = TRUE) {
+plot_deaths <- function(dat, data_fit) {
   
-  which <-
-    if(age) {
-      paste0("deaths_", c("all", "hosp", "0_14", "15_39", "40_59", "60_plus"))
-    } else {
-      paste0("deaths_", c("all", "hosp"))
-    }
+  which <- paste0("deaths_", c("all", "hosp"))
+  values <- c("cadetblue", "darkgoldenrod3", "chartreuse4")
+  breaks <- c("Model", "Data (fitted)", "Data (not fitted)")
   
   data_plot <- data_fit[, c("date", "date_string", which)]
   data_plot$deaths_comm_inc <- data_plot$deaths_all - data_plot$deaths_hosp
   colnames(data_plot) <- c("date", "date_string", "deaths_all_inc",
                            "deaths_hosp_inc", "deaths_comm_inc")
   
-  states <- samples$trajectories$state
+  states <- dat$fit$samples$trajectories$state
   nms <- rownames(states)
   
   traj <- c("deaths_all_inc")
@@ -165,20 +162,76 @@ plot_deaths <- function(samples, data_fit, age = TRUE) {
   }
   
   df$state <- factor(df$state, levels = unique(df$state))
+  df <- df %>%
+    filter(!is.na(data))
   
   ylim <- max(df$ub) * 1.25
   
-  ggplot(df, aes(x = date)) +
-    geom_line(aes(y = mean, col = state)) +
-    geom_ribbon(aes(ymin = lb, ymax = ub, fill = state), alpha = 0.4) +
-    geom_point(aes(y = data, col = state), size = 0.7, alpha = 0.9) +
+  daily <- ggplot(df, aes(x = date)) +
+    geom_line(aes(y = mean, col = "Model")) +
+    geom_ribbon(aes(ymin = lb, ymax = ub, fill = "Model"), alpha = 0.4, show.legend = FALSE) +
+    geom_point(aes(y = data, col = "Data (fitted)"), size = 0.7, alpha = 0.9) +
+    geom_point(aes(y = NA_real_, col = "Data (not fitted)"), size = 0.7, alpha = 0.9) +
     scale_y_continuous(expand = c(0, 0), limits = c(0, ylim)) +
-    scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
-    labs(x = "", y = "Daily deaths") +
+    scale_x_date(date_breaks = "2 month", date_labels = "%b-%y",
+                 limits = c(as.Date("2020-01-01"), NA)) +
+    scale_color_manual(values = values, breaks = breaks,
+                       guide =
+                         guide_legend(override.aes = list(linetype = c(1, NA, NA),
+                                                          size = rep(2, 3),
+                                                          shape = c(NA, 16, 16)))) +
+    scale_fill_manual(values = values, breaks = breaks) +
+    labs(x = "", y = "Daily (fitted)") +
+    theme_minimal() +
+    theme(legend.position = "top",
+          legend.title = element_blank(),
+          axis.line = element_line(),
+          axis.text.x = element_text(angle = 45, vjust = 0.7))
+  
+  ylim <- max(cumsum(df$ub), cumsum(df$data)) + 100
+  
+  cumulative <- ggplot(df, aes(x = date)) +
+    geom_line(aes(y = cumsum(mean), col = "Model")) +
+    geom_ribbon(aes(ymin = cumsum(lb), ymax = cumsum(ub), fill = "Model"), alpha = 0.4) +
+    geom_point(aes(y = cumsum(data), col = "Data (not fitted)"), size = 0.7, alpha = 0.9) +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, ylim)) +
+    scale_x_date(date_breaks = "2 month", date_labels = "%b-%y",
+                 limits = c(as.Date("2020-01-01"), NA)) +
+    scale_color_manual(values = values, breaks = breaks) +
+    scale_fill_manual(values = values, breaks = breaks) +
+    labs(x = "", y = "Cumulative") +
     theme_minimal() +
     theme(legend.position = "none",
           axis.line = element_line(),
           axis.text.x = element_text(angle = 45, vjust = 0.7))
+  
+  weekly <- df %>%
+    mutate(date = lubridate::floor_date(date, "week", week_start = 3)) %>%
+    select(!state) %>%
+    pivot_longer(!c(date)) %>%
+    group_by(date, name) %>%
+    summarise(value = sum(value, na.rm = TRUE)) %>%
+    ungroup() %>%
+    pivot_wider()
+    
+  weekly <- ggplot(weekly, aes(x = date)) +
+    geom_line(aes(y = mean, col = "Model")) +
+    geom_ribbon(aes(ymin = lb, ymax = ub, fill = "Model"), alpha = 0.4) +
+    geom_point(aes(y = data, col = "Data (not fitted)"), size = 0.7, alpha = 0.9) +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+    scale_x_date(date_breaks = "2 month", date_labels = "%b-%y",
+                 limits = c(as.Date("2020-01-01"), NA)) +
+    scale_color_manual(values = values, breaks = breaks) +
+    scale_fill_manual(values = values, breaks = breaks) +
+    labs(x = "", y = "Weekly") +
+    theme_minimal() +
+    theme(legend.position = "none",
+          axis.line = element_line(),
+          axis.text.x = element_text(angle = 45, vjust = 0.7))
+  
+  daily / weekly / cumulative +
+    plot_annotation(title = "All-cause deaths (all ages)")
+  
 }
 
 

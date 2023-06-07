@@ -49,8 +49,8 @@ png("plots/fits_serology.png", units = "in", width = 10, height = 6, res = 300)
 plot_serology(samples, data_fit)
 dev.off()
 
-png("plots/fits_deaths.png", units = "in", width = 10, height = 6, res = 300)
-plot_deaths(samples, data_fit, age = FALSE)
+png("plots/fits_deaths.png", units = "in", width = 10, height = 10, res = 300)
+plot_deaths(dat, data_fit)
 dev.off()
 
 png("plots/infections_inc.png", units = "in", width = 8, height = 10, res = 300)
