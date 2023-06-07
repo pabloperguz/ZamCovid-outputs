@@ -50,8 +50,10 @@ plot_serology(samples, data_fit)
 dev.off()
 
 png("plots/fits_deaths.png", units = "in", width = 10, height = 10, res = 300)
-plot_deaths(dat, data_fit)
+plot_deaths(dat, data_fit) | plot_deaths_disag(dat)
 dev.off()
+
+
 
 png("plots/infections_inc.png", units = "in", width = 8, height = 10, res = 300)
 plot_infection_incidence(dat)

@@ -181,29 +181,29 @@ plot_deaths <- function(dat, data_fit) {
                                                           size = rep(2, 3),
                                                           shape = c(NA, 16, 16)))) +
     scale_fill_manual(values = values, breaks = breaks) +
-    labs(x = "", y = "Daily (fitted)") +
+    labs(x = "", y = "Daily", title = "All-cause deaths") +
     theme_minimal() +
     theme(legend.position = "top",
           legend.title = element_blank(),
           axis.line = element_line(),
-          axis.text.x = element_text(angle = 45, vjust = 0.7))
+          axis.text.x = element_blank())
   
-  ylim <- max(cumsum(df$ub), cumsum(df$data)) + 100
-  
-  cumulative <- ggplot(df, aes(x = date)) +
-    geom_line(aes(y = cumsum(mean), col = "Model")) +
-    geom_ribbon(aes(ymin = cumsum(lb), ymax = cumsum(ub), fill = "Model"), alpha = 0.4) +
-    geom_point(aes(y = cumsum(data), col = "Data (not fitted)"), size = 0.7, alpha = 0.9) +
-    scale_y_continuous(expand = c(0, 0), limits = c(0, ylim)) +
-    scale_x_date(date_breaks = "2 month", date_labels = "%b-%y",
-                 limits = c(as.Date("2020-01-01"), NA)) +
-    scale_color_manual(values = values, breaks = breaks) +
-    scale_fill_manual(values = values, breaks = breaks) +
-    labs(x = "", y = "Cumulative") +
-    theme_minimal() +
-    theme(legend.position = "none",
-          axis.line = element_line(),
-          axis.text.x = element_text(angle = 45, vjust = 0.7))
+  # ylim <- max(cumsum(df$ub), cumsum(df$data)) + 100
+  # 
+  # cumulative <- ggplot(df, aes(x = date)) +
+  #   geom_line(aes(y = cumsum(mean), col = "Model")) +
+  #   geom_ribbon(aes(ymin = cumsum(lb), ymax = cumsum(ub), fill = "Model"), alpha = 0.4) +
+  #   geom_point(aes(y = cumsum(data), col = "Data (not fitted)"), size = 0.7, alpha = 0.9) +
+  #   scale_y_continuous(expand = c(0, 0), limits = c(0, ylim)) +
+  #   scale_x_date(date_breaks = "2 month", date_labels = "%b-%y",
+  #                limits = c(as.Date("2020-01-01"), NA)) +
+  #   scale_color_manual(values = values, breaks = breaks) +
+  #   scale_fill_manual(values = values, breaks = breaks) +
+  #   labs(x = "", y = "Cumulative") +
+  #   theme_minimal() +
+  #   theme(legend.position = "none",
+  #         axis.line = element_line(),
+  #         axis.text.x = element_text(angle = 45, vjust = 0.7, size = 10))
   
   weekly <- df %>%
     mutate(date = lubridate::floor_date(date, "week", week_start = 3)) %>%
@@ -227,10 +227,85 @@ plot_deaths <- function(dat, data_fit) {
     theme_minimal() +
     theme(legend.position = "none",
           axis.line = element_line(),
-          axis.text.x = element_text(angle = 45, vjust = 0.7))
+          axis.text.x = element_text(angle = 45, vjust = 0.7, size = 10))
   
-  daily / weekly / cumulative +
-    plot_annotation(title = "All-cause deaths (all ages)")
+  daily / weekly
+  
+}
+
+
+plot_deaths_disag <- function(dat) {
+  
+  which <- c("deaths_all_inc", "base_death_inc", "deaths_covid_inc",
+             paste0("D_", seq(0, 75, 5)))
+  dates <- ZamCovid:::numeric_date_as_date(dat$fit$samples$trajectories$date)[-1]
+  data <- rep(NA_real_, length(dates))
+  
+  states <- dat$fit$samples$trajectories$state
+  
+  df <- NULL
+  for (t in which) {
+    
+    if (t == "deaths_covid_inc") {
+      tmp <- states["deaths_comm_inc", , -1] + states["deaths_hosp_inc", , -1]
+    } else {
+      tmp <- states[t, , -1]
+    }
+    ret <- traj_to_long(t, tmp, dates, data) %>% select(!data)
+    df <- rbind(df, ret)
+  }
+  
+  
+  deaths_agg <- df %>%
+    filter(state %in% c("base_death_inc", "deaths_covid_inc")) %>%
+    select(date, state, mean) %>%
+    group_by(date, state) %>%
+    summarise(n = sum(mean)) %>%
+    mutate(percent = n / sum(n)) %>%
+    filter(state == "deaths_covid_inc")
+  
+  agg <- ggplot(deaths_agg, aes(x = date)) +
+    geom_area(aes(y = percent, fill = state), alpha = 0.75) +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, 1),
+                       labels = scales::percent_format()) +
+    scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
+    scale_fill_manual(values = "brown4") +
+    labs(x = "", y = "Covid-19 deaths (% all deaths)") +
+    theme_minimal() +
+    theme(legend.position = "none",
+          legend.title = element_blank(),
+          axis.line = element_line(),
+          axis.text.x = element_blank())
+  
+  deaths_age <- df %>%
+    filter(!state %in% c("deaths_all_inc", "base_death_inc", "deaths_covid_inc")) %>%
+    select(date, state, mean) %>%
+    group_by(date, state) %>%
+    summarise(n = sum(mean)) %>%
+    mutate(percent = n / sum(n))
+  
+  deaths_age$state <- factor(deaths_age$state,
+                             levels = paste0("D_", seq(0, 75, 5)),
+                             labels = c(paste0(seq(0, 70, 5),
+                                               " to ", seq(4, 74, 5)),
+                                        "75+"))
+  
+  
+  age <- ggplot(deaths_age, aes(x = date)) +
+    geom_area(aes(y = percent, fill = state), alpha = 0.75) +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, 1),
+                       labels = scales::percent_format()) +
+    scale_x_date(date_breaks = "2 month", date_labels = "%b-%y",
+                 limits = c(as.Date("2020-01-01"), NA)) +
+    scale_fill_viridis_d(direction = 1) +
+    labs(x = "", y = "Deaths by age (% daily Covid-19 deaths)") +
+    theme_minimal() +
+    theme(legend.title = element_blank(),
+          axis.line = element_line(),
+          axis.text.x = element_text(angle = 45, vjust = 0.7, size = 10))
+  
+  (agg / age) +
+    plot_layout(heights = c(0.5, 1))
   
 }
 
