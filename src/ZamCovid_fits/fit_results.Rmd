@@ -19,7 +19,7 @@ if (assumptions == "fit_no_deaths") {
   plot <- plot_serology(samples, data_fit)
 } else {
   plot <- plot_serology(samples, data_fit) +
-    plot_deaths(samples, data_fit, age = FALSE)
+    plot_deaths(dat, data_fit)
 }
 
 plot
