@@ -16,9 +16,9 @@ print(paste0(ifelse(deterministic, "Deterministic", "Stochastic"),
              " model ran with assumptions: ", assumptions))
 
 if (assumptions == "fit_no_deaths") {
-  plot <- plot_serology(samples, data_fit)
+  plot <- plot_serology(dat$fit$samples, data_fit)
 } else {
-  plot <- plot_serology(samples, data_fit) +
+  plot <- plot_serology(dat$fit$samples, data_fit) +
     plot_deaths(dat, data_fit)
 }
 

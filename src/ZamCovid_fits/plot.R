@@ -11,6 +11,20 @@ traj_to_long <- function(t, tmp, dates, data) {
 }
 
 
+calc_seropos <- function(tmp, dates, name) {
+  
+  pos <- tmp[, grep("pos", colnames(tmp))]
+  tot <- tmp[, grep("tot", colnames(tmp))]
+  pos[is.na(pos)] <- 0
+  tot[is.na(tot)] <- 0
+  
+  data.frame(date = dates) %>%
+    cbind(., as.data.frame(Hmisc::binconf(pos, tot))) %>%
+    `colnames<-`(c("date", "data_mean", "data_lb", "data_ub")) %>%
+    mutate(state = name)
+}
+
+
 plot_fit_traces <- function(samples) {
   
   if (is.null(samples$chain)) {
@@ -68,29 +82,34 @@ plot_fit_traces <- function(samples) {
 }
 
 
-plot_serology <- function(samples, data_fit,
-                          which = c("over15", "15_19", "20_29",
-                                    "30_39", "40_49", "50_plus")) {
+plot_serology <- function(samples, data, over15_only = FALSE) {
   
-  sero_cols <- grep("sero", colnames(data_fit), value = TRUE)
-  data_fit <- data_fit[, c("date", "date_string", sero_cols)]
+  which <- c("all", "15_19", "20_29",
+             "30_39", "40_49", "50_plus")
+  sero_cols <- grep("sero", colnames(data), value = TRUE)
+  dates <- ZamCovid:::numeric_date_as_date(dat$fit$samples$trajectories$date)[-1]
+  data <- data[, c("date", sero_cols)] %>%
+    filter(as.Date(date) %in% dates)
+  
+  values <- c("cadetblue", "darkgoldenrod3", "chartreuse4")
+  breaks <- c("Model", "Data (fitted)", "Data*")
+  labels <- c("All (15+ years)", "15 to 19",
+              "20 to 29", "30 to 39", "40 to 49",
+              "50 and older")
+  
+  if (over15_only) {
+    which <- which[1]
+    labels <- labels[1]
+  }
   
   data_plot <- NULL
   for (w in which) {
-    keep <- grep(w, colnames(data_fit), value = TRUE)
-    tmp <- data_fit[, keep]
+    keep <- grep(w, colnames(data), value = TRUE)
+    if (w == "all") {w <- "over15"}
+    name <- paste0("sero_pos_", w)
+    tmp <- calc_seropos(data[, keep], dates, name)
     
-    pos <- tmp[, grep("pos", colnames(tmp))]
-    tot <- tmp[, grep("tot", colnames(tmp))]
-    pos[is.na(pos)] <- 0
-    tot[is.na(tot)] <- 0
-    
-    out <- data.frame(as.Date(data_fit$date_string)) %>%
-      cbind(., as.data.frame(Hmisc::binconf(pos, tot))) %>%
-      `colnames<-`(c("date", "data_mean", "data_lb", "data_ub")) %>%
-      mutate(state = paste0("sero_pos_", w))
-    
-    data_plot <- rbind(data_plot, out)
+    data_plot <- rbind(data_plot, tmp)
   }
   
   states <- samples$trajectories$state
@@ -100,49 +119,63 @@ plot_serology <- function(samples, data_fit,
   sens <- p$sero_sensitivity
   spec <- p$sero_specificity
   
+  which[1] <- "over15"
   traj <- paste0("sero_pos_", which)
   sero_pos <- samples$trajectories$state[traj, , ]
   
   dates_vect <- unique(data_plot$date)
   df <- NULL
   for (t in traj) {
-    dates <- unique(as.Date(data_plot$date))
-    data <- data_plot %>%
+    data_tmp <- data_plot %>%
       filter(state == t)
     n <- p[[paste0("N_tot_", gsub("sero_pos_", "", t))]]
     sero_pos <- states[t, , -1]
     tmp <- ((sens *  sero_pos + (1 - spec) * (n - sero_pos)) / n) - 0.01
-    ret <- traj_to_long(t, tmp, dates, data)
+    ret <- traj_to_long(t, tmp, dates, data_tmp)
     df <- rbind(df, ret)
   }
+ 
+  df <- left_join(df, data_plot) %>%
+    mutate(col = case_when(state == "sero_pos_over15" ~ "Data*",
+                           TRUE ~ "Data (fitted)"))
+  df$state <- factor(df$state, levels = unique(df$state), labels = labels)
   
-  df <- left_join(df, data_plot)
-  df$state <- factor(df$state, levels = unique(df$state))
-  
-  ggplot(df, aes(x = date)) +
-    geom_line(aes(y = mean, col = state)) +
-    geom_ribbon(aes(ymin = lb, ymax = ub, fill = state), alpha = 0.4) +
-    geom_point(aes(y = data_mean, col = state), size = 0.9, alpha = 0.5) +
+  p <- ggplot(df, aes(x = date)) +
+    geom_line(aes(y = mean, col = "Model")) +
+    geom_ribbon(aes(ymin = lb, ymax = ub, fill = "Model"), alpha = 0.4, show.legend = FALSE) +
+    geom_point(aes(y = data_mean, col = col), size = 0.9, alpha = 0.5) +
     geom_errorbar(aes(ymin = data_lb, ymax = data_ub, 
-                        col = state), linewidth = 0.3, alpha = 0.5) +
+                        col = col), linewidth = 0.3, alpha = 0.5) +
     scale_y_continuous(expand = c(0, 0),
                        limits = c(0, 1),
                        labels = scales::percent_format()) +
     scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
+    scale_color_manual(values = values, breaks = breaks) +
+    scale_fill_manual(values = values, breaks = breaks) +
     facet_wrap(~state, scales = "free_y") +
-    labs(x = "", y = "Proportion sero-positive") +
+    labs(x = "", y = "", title = "Proportion sero-positive") +
     theme_minimal() +
     theme(legend.position = "none",
           axis.line = element_line(),
           axis.text.x = element_text(angle = 45, vjust = 0.7))
+  
+  if (over15_only) {
+    p + 
+      labs(y = "% sero-positive (15+ year-olds)", title = "") +
+      theme(strip.text = element_blank(),
+            legend.title = element_blank(),
+            legend.position = "right")
+  } else {
+    p
+  }
 }
 
 
-plot_deaths <- function(dat, data_fit) {
+plot_deaths <- function(dat, data_fit, week_only = FALSE) {
   
   which <- paste0("deaths_", c("all", "hosp"))
   values <- c("cadetblue", "darkgoldenrod3", "chartreuse4")
-  breaks <- c("Model", "Data (fitted)", "Data (not fitted)")
+  breaks <- c("Model", "Data (fitted)", "Data*")
   
   data_plot <- data_fit[, c("date", "date_string", which)]
   data_plot$deaths_comm_inc <- data_plot$deaths_all - data_plot$deaths_hosp
@@ -171,7 +204,7 @@ plot_deaths <- function(dat, data_fit) {
     geom_line(aes(y = mean, col = "Model")) +
     geom_ribbon(aes(ymin = lb, ymax = ub, fill = "Model"), alpha = 0.4, show.legend = FALSE) +
     geom_point(aes(y = data, col = "Data (fitted)"), size = 0.7, alpha = 0.9) +
-    geom_point(aes(y = NA_real_, col = "Data (not fitted)"), size = 0.7, alpha = 0.9) +
+    geom_point(aes(y = NA_real_, col = "Data*"), size = 0.7, alpha = 0.9) +
     scale_y_continuous(expand = c(0, 0), limits = c(0, ylim)) +
     scale_x_date(date_breaks = "2 month", date_labels = "%b-%y",
                  limits = c(as.Date("2020-01-01"), NA)) +
@@ -183,27 +216,10 @@ plot_deaths <- function(dat, data_fit) {
     scale_fill_manual(values = values, breaks = breaks) +
     labs(x = "", y = "Daily", title = "All-cause deaths") +
     theme_minimal() +
-    theme(legend.position = "top",
+    theme(legend.position = "left",
           legend.title = element_blank(),
           axis.line = element_line(),
           axis.text.x = element_blank())
-  
-  # ylim <- max(cumsum(df$ub), cumsum(df$data)) + 100
-  # 
-  # cumulative <- ggplot(df, aes(x = date)) +
-  #   geom_line(aes(y = cumsum(mean), col = "Model")) +
-  #   geom_ribbon(aes(ymin = cumsum(lb), ymax = cumsum(ub), fill = "Model"), alpha = 0.4) +
-  #   geom_point(aes(y = cumsum(data), col = "Data (not fitted)"), size = 0.7, alpha = 0.9) +
-  #   scale_y_continuous(expand = c(0, 0), limits = c(0, ylim)) +
-  #   scale_x_date(date_breaks = "2 month", date_labels = "%b-%y",
-  #                limits = c(as.Date("2020-01-01"), NA)) +
-  #   scale_color_manual(values = values, breaks = breaks) +
-  #   scale_fill_manual(values = values, breaks = breaks) +
-  #   labs(x = "", y = "Cumulative") +
-  #   theme_minimal() +
-  #   theme(legend.position = "none",
-  #         axis.line = element_line(),
-  #         axis.text.x = element_text(angle = 45, vjust = 0.7, size = 10))
   
   weekly <- df %>%
     mutate(date = lubridate::floor_date(date, "week", week_start = 3)) %>%
@@ -216,12 +232,16 @@ plot_deaths <- function(dat, data_fit) {
     
   weekly <- ggplot(weekly, aes(x = date)) +
     geom_line(aes(y = mean, col = "Model")) +
-    geom_ribbon(aes(ymin = lb, ymax = ub, fill = "Model"), alpha = 0.4) +
-    geom_point(aes(y = data, col = "Data (not fitted)"), size = 0.7, alpha = 0.9) +
+    geom_ribbon(aes(ymin = lb, ymax = ub, fill = "Model"), alpha = 0.4, show.legend = FALSE) +
+    geom_point(aes(y = data, col = "Data*"), size = 0.7, alpha = 0.9) +
     scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
     scale_x_date(date_breaks = "2 month", date_labels = "%b-%y",
                  limits = c(as.Date("2020-01-01"), NA)) +
-    scale_color_manual(values = values, breaks = breaks) +
+    scale_color_manual(values = values, breaks = breaks,
+                       guide =
+                         guide_legend(override.aes = list(linetype = c(1, NA),
+                                                          size = rep(2, 2),
+                                                          shape = c(NA, 16)))) +
     scale_fill_manual(values = values, breaks = breaks) +
     labs(x = "", y = "Weekly") +
     theme_minimal() +
@@ -229,12 +249,21 @@ plot_deaths <- function(dat, data_fit) {
           axis.line = element_line(),
           axis.text.x = element_text(angle = 45, vjust = 0.7, size = 10))
   
-  daily / weekly
   
+  if (week_only) {
+    weekly + labs(y = "Weekly deaths (all-cause)", title = "",
+                  caption = "* Seropositivity data fitted to age-specific timeseries; all-cause deaths fitted to daily timeseries.
+                  For clarity of visualisation, aggregated data are presented.
+                  Shared area around model trajectory represents 95% Credible Interval") +
+      theme(legend.position = "left",
+            legend.title = element_blank())
+  } else {
+    daily / weekly
+  }
 }
 
 
-plot_deaths_disag <- function(dat) {
+plot_deaths_disag <- function(dat, plot_age = TRUE) {
   
   which <- c("deaths_all_inc", "base_death_inc", "deaths_covid_inc",
              paste0("D_", seq(0, 75, 5)))
@@ -275,7 +304,7 @@ plot_deaths_disag <- function(dat) {
     theme(legend.position = "none",
           legend.title = element_blank(),
           axis.line = element_line(),
-          axis.text.x = element_blank())
+          axis.text.x = element_text(angle = 45, vjust = 0.7, size = 12))
   
   deaths_age <- df %>%
     filter(!state %in% c("deaths_all_inc", "base_death_inc", "deaths_covid_inc")) %>%
@@ -304,8 +333,11 @@ plot_deaths_disag <- function(dat) {
           axis.line = element_line(),
           axis.text.x = element_text(angle = 45, vjust = 0.7, size = 10))
   
-  (agg / age) +
-    plot_layout(heights = c(0.5, 1))
+  if (plot_age) {
+    ((agg + theme(axis.text.x = element_blank())) / age) +
+      plot_layout(heights = c(0.5, 1))
+  } else {agg}
+  
   
 }
 
@@ -383,7 +415,7 @@ plot_deaths_disag_inc <- function(dat, data_full) {
     scale_fill_viridis_d(direction = 1) +
     scale_color_viridis_d(direction = 1) +
     facet_wrap(~state, scales = "free_y") +
-    labs(x = "", y = "Weekly deaths by age (all-cause)") +
+    labs(x = "", y = "Cumulative deaths by age (all-cause)") +
     theme_minimal() +
     theme(legend.position = "none",
           axis.line = element_line(),
@@ -418,7 +450,7 @@ plot_rt <- function(dat) {
     scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
     labs(x = "", y = "Reproduction number") +
     theme_minimal() +
-    theme(legend.position = "top",
+    theme(legend.position = "right",
           legend.title = element_blank(),
           axis.line = element_line(),
           axis.text.x = element_text(angle = 45, vjust = 0.7))
@@ -434,7 +466,7 @@ plot_severity <- function(dat, age = TRUE, xmin = "2020-04-01") {
   p1 <- ggplot(ifr, aes(date, mean)) +
     geom_line(col = "blue4") +
     geom_ribbon(aes(ymin = lb, ymax = ub), alpha = 0.3, fill = "blue4") +
-    scale_y_continuous(expand = c(0, 0), limits = c(0, 0.02),
+    scale_y_continuous(expand = c(0, 0), limits = c(0, 0.015),
                        labels = scales::percent_format()) +
     scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
     labs(y = "Effective IFR", x = "") +
@@ -499,11 +531,11 @@ plot_infection_incidence <- function(dat) {
     labs(y = "Infection incidence (x 1,000 population)", x = "") +
     theme_minimal() +
     theme(axis.line = element_line(),
-          axis.text.x = element_text(angle = 45, vjust = 0.7))
+          axis.text.x = element_blank())
   
   p_reinf <- ggplot(reinf, aes(x = date)) +
-    geom_ribbon(aes(ymax = 1, ymin = mean / inf$mean, fill = "1st infections")) +
-    geom_ribbon(aes(ymin = 0, ymax = mean / inf$mean, fill = "Re-infections")) +
+    geom_ribbon(aes(ymax = 1, ymin = mean / inf$mean, fill = "1st infections"), alpha = 0.7) +
+    geom_ribbon(aes(ymin = 0, ymax = mean / inf$mean, fill = "Re-infections"), alpha = 0.7) +
     scale_fill_manual(values = c("royalblue4", "orange2")) +
     scale_y_continuous(expand = c(0, 0), limits = c(0, 1),
                        labels = scales::percent_format(accuracy = 1)) +
@@ -511,9 +543,9 @@ plot_infection_incidence <- function(dat) {
     labs(y = "% daily infections", x = "") +
     theme_minimal() +
     theme(legend.title = element_blank(),
-          legend.position = "top",
+          legend.position = "right",
           axis.line = element_line(),
-          axis.text.x = element_text(angle = 45, vjust = 0.7))
+          axis.text.x = element_text(angle = 45, vjust = 0.7, size = 12))
 
   p_inf / p_reinf  
 }
