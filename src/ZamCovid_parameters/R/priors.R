@@ -24,15 +24,15 @@ create_priors <- function(pars_info) {
                                    ci = 0.95)
   beta_hps["beta2", "scale"] <- beta_hps["beta2", "scale"] * R0_fac
   ## beta3 aim for 95% CI of [0.4, 3]
-  beta_hps["beta3", ] <- fit_gamma(mean_D = 1.395,
-                                   lower_D = 0.4,
-                                   upper_D = 3,
-                                   ci = 0.95)
-  beta_hps["beta3", "scale"] <- beta_hps["beta3", "scale"] * R0_fac
+  # beta_hps["beta3", ] <- fit_gamma(mean_D = 1.395,
+  #                                  lower_D = 0.4,
+  #                                  upper_D = 3,
+  #                                  ci = 0.95)
+  # beta_hps["beta3", "scale"] <- beta_hps["beta3", "scale"] * R0_fac
   
   ## After beta3 we use the same prior distribution
   beta_hps <-
-    beta_hps[c("beta1", "beta2", rep("beta3", 46)), ]
+    beta_hps[c(rep("beta1", 3), rep("beta2", 44)), ]# , rep("beta3", 41)), ]
   rownames(beta_hps) <- paste0("beta", seq_len(nrow(beta_hps)))
   beta_names <- rownames(beta_hps)
   
@@ -48,7 +48,7 @@ create_priors <- function(pars_info) {
   
   ret <- priors_wide_to_long(hps)
   
-  par <- c("p_G_D", "alpha_D", "mu_D_1", "mu_D_2", "mu_D_3")
+  par <- c("p_G_D", "alpha_D", "mu_D_1", "mu_D_2")
   # We will zero the probabilities of going into hospital for now as there are
   # no reliable sources of hospitalisation data. Fitted p_G_D will reflect
   # overall probability of death by mechanistically assuming all deaths

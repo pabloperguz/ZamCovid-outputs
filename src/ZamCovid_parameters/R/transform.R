@@ -5,11 +5,9 @@ compute_severity <- function(pars, severity_data) {
   
   # Time-varying probability of death (mechanistically of dying outside hospital)
   mu_D_date <- ZamCovid:::numeric_date(c("2020-08-15",
-                                         "2020-12-01", "2021-02-01",
-                                         "2021-03-01", "2021-05-01",
-                                         "2021-06-01", "2021-07-15",
-                                         "2021-09-01"))
-  mu_D_vect <- c(1, mu_D_1, mu_D_1, mu_D_2, mu_D_2, mu_D_3, mu_D_3, mu_D_2)
+                                         "2020-12-01", "2021-03-15",
+                                         "2021-05-01"))
+  mu_D_vect <- c(1, mu_D_1, mu_D_1, mu_D_2)
   p_G_D_value <- p_G_D * mu_D_vect
   
   # Simplifying assumptions
@@ -116,7 +114,7 @@ make_transform <- function(baseline) {
   
   
   expected <- c("start_date", baseline$beta_names, "p_G_D", "alpha_D",
-                "mu_D_1", "mu_D_2", "mu_D_3")
+                "mu_D_1", "mu_D_2")
   
   function(pars) {
     
