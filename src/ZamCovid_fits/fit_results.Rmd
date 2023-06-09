@@ -8,6 +8,61 @@ date: "2023-05-08"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+## Values for Epidemics poster
+
+At the peaks of the first, second and third waves infection incidence and reinfection rates were:
+```{r, echo = FALSE}
+sample <- dat$fit$samples$trajectories$state
+dates <- ZamCovid:::numeric_date_as_date(dat$fit$samples$trajectories$date)
+data <- rep(NA_real_, length(dates))
+
+inf_traj <- c( "infections_inc", "reinfections_inc")
+
+inf <- traj_to_long("infections_inc", 
+                    sample["infections_inc", ,], 
+                    dates, data)
+
+reinf <- traj_to_long("reinfections_inc", 
+                      sample["reinfections_inc", ,], 
+                      dates, data)
+
+peak_dates <- c(
+  which.max(inf$mean[inf$date < as.Date("2020-10-01")]),
+  which.max(inf$mean[inf$date < as.Date("2021-03-15")]),
+  which.max(inf$mean[inf$date < as.Date("2021-09-01")])
+)
+
+inf_peaks <- inf[peak_dates, ] %>%
+  mutate(infections = paste0(round(mean), " (95%CrI ", round(lb), " - ", round(ub), ")")) %>%
+  select(date, infections, mean_inf = mean, lb_inf = lb, ub_inf = ub)
+
+reinf_peaks <- reinf[peak_dates, ] %>%
+  select(date, mean_reinf = mean, lb_reinf = lb, ub_reinf = ub)
+
+peaks <- left_join(inf_peaks, reinf_peaks) %>%
+  mutate(reinf_pc = (mean_reinf / mean_inf) * 100) %>%
+  select(date, infections, reinf_pc)
+
+peaks
+
+```
+
+The IFR changed from:
+```{r, echo = FALSE}
+ifr <- get_severity(dat$fit$severity, "ifr")
+ifr_dates <- as.Date(c("2020-08-15", "2020-12-01", "2021-03-15", "2021-05-01"))
+ifr_names <- c("baseline", "mu_D_1 start", "mu_D_1 end", "mu_D_2 start")
+
+ifr <- ifr[ifr$date %in% ifr_dates, ] %>%
+  mutate(value = paste0(round(mean * 100, 2), " (95%CrI ",
+                        round(lb * 100, 2), " to ", round(ub * 100, 2), ")")) %>%
+  select(date, value)
+
+ifr$name <- ifr_names
+
+ifr
+```
+
 ## Fitted trajectories
 
 
@@ -16,9 +71,9 @@ print(paste0(ifelse(deterministic, "Deterministic", "Stochastic"),
              " model ran with assumptions: ", assumptions))
 
 if (assumptions == "fit_no_deaths") {
-  plot <- plot_serology(dat$fit$samples, data_fit)
+  plot <- plot_serology(dat$fit$samples, data_full)
 } else {
-  plot <- plot_serology(dat$fit$samples, data_fit) +
+  plot <- plot_serology(dat$fit$samples, data_full) +
     plot_deaths(dat, data_fit)
 }
 
