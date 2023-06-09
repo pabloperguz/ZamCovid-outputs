@@ -57,8 +57,7 @@ png("plots/infections_inc.png", units = "in", width = 8, height = 10, res = 300)
 plot_infection_incidence(dat)
 dev.off()
 
-# Epidemics9 plots
-
+# Epidemics9 plot
 col1 <- (
   (plot_serology(dat$fit$samples, data_full, over15_only = TRUE) +
      theme(axis.text.x = element_blank())) /

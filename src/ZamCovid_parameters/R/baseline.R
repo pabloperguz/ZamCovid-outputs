@@ -142,7 +142,7 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     # direct
     "start_date", beta_names,
     # severity
-    "p_G_D", "alpha_D", "mu_D_1", "mu_D_2", "mu_D_3"
+    "p_G_D", "alpha_D", "mu_D_1", "mu_D_2"
   )
   stopifnot(setequal(to_fit_all, names(pars_info)))
   
