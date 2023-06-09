@@ -310,6 +310,87 @@ plot_deaths_disag <- function(dat) {
 }
 
 
+plot_deaths_disag_inc <- function(dat, data_full) {
+  
+  dates <- ZamCovid:::numeric_date_as_date(dat$fit$samples$trajectories$date)[-1]
+  which <- c("deaths_0_14", "deaths_15_39", "deaths_40_59", "deaths_60_plus")
+  
+  data <- data_full[, c("date", which)] %>%
+    mutate(date = as.Date(date)) %>%
+    filter(date %in% dates)
+  
+  states <- dat$fit$samples$trajectories$state
+  df <- NULL
+  for (t in which) {
+    
+    if (t == which[1]) {
+      tmp <- states[paste0("D_", seq(0, 10, 5)), , -1]
+    } else if (t == which[2]) {
+      tmp <- states[paste0("D_", seq(15, 35, 5)), , -1]
+    } else if (t == which[3]) {
+      tmp <- states[paste0("D_", seq(40, 55, 5)), , -1]
+    } else if (t == which[4]) {
+      tmp <- states[paste0("D_", seq(60, 75, 5)), , -1]
+    }
+    
+    tmp <- apply(tmp, MARGIN = c(2, 3), sum)
+    # tmp <- rbind(rep(0, dim(tmp)[2]), apply(tmp, MARGIN = 2, diff))
+    # browser()
+    ret <- traj_to_long(t, tmp, dates, data[, t]) %>%
+      filter(date >= as.Date("2020-03-15"))
+    ret$data <- cumsum(ret$data)
+    
+    df <- rbind(df, ret)
+  }
+  
+  base_deaths <- data.frame(
+    date = dates,
+    deaths = colMeans(states["base_death_inc", , -1])) %>%
+    filter(date >= as.Date("2020-03-15"))
+  
+  base_deaths <- df %>% 
+    select(date, state, data) %>%
+    group_by(date, state) %>%
+    summarise(n = sum(data)) %>%
+    mutate(percent = n / sum(n)) %>%
+    ungroup() %>%
+    select(date, name = state, value = percent) %>%
+    pivot_wider() %>%
+    left_join(base_deaths, .) %>%
+    mutate_each(funs(cumsum(. * deaths)), starts_with("deaths_")) %>%
+    # mutate_each(funs(. * deaths), starts_with("deaths_")) %>%
+    select(!deaths) %>%
+    pivot_longer(!date, names_to = "state", values_to = "baseline")
+  
+  df <- left_join(df, base_deaths)
+  # browser()
+  # x <- left_join(df, base_deaths) %>%
+  #   mutate(week = lubridate::floor_date(date, "week", week_start = 3)) %>%
+  #   select(!date) %>%
+  #   pivot_longer(!c(week, state)) %>%
+  #   group_by(week, state, name) %>%
+  #   summarise(value = sum(value)) %>%
+  #   ungroup() %>%
+  #   pivot_wider()
+  
+  ggplot(df, aes(x = date)) +
+    geom_line(aes(y = mean + baseline, col = state)) +
+    geom_ribbon(aes(ymin = lb + baseline, ymax = ub + baseline, fill = state), alpha = 0.3) +
+    geom_point(aes(y = data, col = state), alpha = 0.3) +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+    scale_x_date(date_breaks = "2 month", date_labels = "%b-%y",
+                 limits = c(as.Date("2020-01-01"), NA)) +
+    scale_fill_viridis_d(direction = 1) +
+    scale_color_viridis_d(direction = 1) +
+    facet_wrap(~state, scales = "free_y") +
+    labs(x = "", y = "Weekly deaths by age (all-cause)") +
+    theme_minimal() +
+    theme(legend.position = "none",
+          axis.line = element_line(),
+          axis.text.x = element_text(angle = 45, vjust = 0.7, size = 10))
+}
+
+
 plot_rt <- function(dat) {
 
   rt <- dat$fit$rt$Rt_general
