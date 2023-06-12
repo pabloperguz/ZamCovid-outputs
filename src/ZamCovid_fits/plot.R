@@ -605,3 +605,239 @@ get_new_pars <- function(samples, priors) {
   list(vcv = vcv,
        priors = priors)
 }
+
+
+plot_forest <- function(dat, plot_type = "betas") {
+  
+  labels <- get_par_labels(dat)
+  stopifnot(plot_type %in% c("all", "betas", "non_betas"))
+  
+  samples <- dat$fit$samples
+  date <- dat$fit$parameters$base$date
+  par_names <- colnames(samples$pars)
+  
+  beta_date <- ZamCovid:::numeric_date_as_date(samples$info$beta_date)
+  beta_names <- par_names[substr(par_names, 1, 4) == "beta"]
+  beta_names <- beta_names[order(as.numeric(gsub("beta", "", beta_names)))]
+  
+  hps <- dat$fit$parameters$prior
+  pars_info <- dat$fit$parameters$info
+  
+  ## Can set the xmax for specific parameters here. For any left as NA, it will
+  ## instead just use the maximum from the parameters info
+  par_max <- rep(NA, length(par_names))
+  names(par_max) <- par_names
+  par_max[beta_names] <- 0.25
+  
+  extract_sample <- function(par_name) {
+    lapply(samples, function(x) as.numeric(x$pars[, par_name]))
+  }
+  
+  plot_par <- function(nm, type = NULL, plot = FALSE) {
+    
+    numeric_par <- as.numeric(samples$pars[, nm])
+    numeric_par <- data.frame(
+      name = nm,
+      mean = mean(numeric_par),
+      lb = quantile(numeric_par, 0.025),
+      ub = quantile(numeric_par, 0.975)
+    )
+    
+    xlims <- as.vector(pars_info[pars_info$name == nm, c("min", "max")])
+      
+    if (type == "beta") {
+      prior <- hps[hps$name == nm, c("beta_shape1", "beta_shape2")]
+      shape1 <- prior$beta_shape1
+      shape2 <- prior$beta_shape2
+      
+      prior <- mapply(qbeta,
+                      shape1 = shape1,
+                      shape2 = shape2,
+                      MoreArgs = list(p = c(0.025, 0.975)),
+                      SIMPLIFY = TRUE)
+      
+      prior <- as.list(prior)
+      names(prior) <- c("min", "max")
+      
+    } else if (type == "gamma") {
+      prior <- hps[hps$name == nm, c("gamma_shape", "gamma_scale")]
+      shape <- prior$gamma_shape
+      scale <- prior$gamma_scale
+      
+      prior <- mapply(qgamma,
+                      shape = shape,
+                      scale = scale,
+                      MoreArgs = list(p = c(0.025, 0.975)),
+                      SIMPLIFY = TRUE)
+      
+      prior <- as.list(prior)
+      names(prior) <- c("min", "max")
+      
+    } else {
+      prior <- xlims
+    }
+    
+    if (plot) {
+      ggplot(numeric_par) +
+        geom_pointrange(aes(y = NA, x = mean, xmin = lb, xmax = ub)) +
+        labs(y = labels[nm], x = "") +
+        scale_x_continuous(limits = c(xlims$min, xlims$max)) +
+        geom_vline(xintercept = c(prior$min, prior$max), linetype = 3, col = "red") +
+        theme_minimal() +
+        theme(axis.text.y = element_blank(),
+              axis.text.x = element_text(size = 10),
+              axis.title = element_text(size = 16, face = "bold"),
+              panel.grid.major.y = element_blank(),
+              panel.grid.minor.x = element_blank())
+    } else {
+      prior <- data.frame(min = prior$min, max = prior$max)
+      cbind(numeric_par, prior)
+    }
+  }
+  
+  ## Plot start date
+  numeric_start_date <- as.numeric(samples$pars[, "start_date"])
+  numeric_start_date <- data.frame(
+    name = "start_date",
+    mean = ZamCovid:::numeric_date_as_date(mean(numeric_start_date)),
+    lb = ZamCovid:::numeric_date_as_date(quantile(numeric_start_date, 0.025)),
+    ub = ZamCovid:::numeric_date_as_date(quantile(numeric_start_date, 0.975))
+  )
+
+  start_date <- ggplot(numeric_start_date) +
+    geom_pointrange(aes(y = NA, x = mean, xmin = lb, xmax = ub)) +
+    labs(y = labels$start_date, x = "") +
+    scale_x_date(limits = c(as.Date("2020-02-15"), as.Date("2020-04-15")),
+                 date_labels = "%d-%b-%Y") +
+    theme_minimal() +
+    theme(axis.text.y = element_blank(),
+          axis.text.x = element_text(size = 10, angle = 45, vjust = 0.7),
+          axis.title = element_text(size = 16, face = "bold"),
+          panel.grid.major.y = element_blank(),
+          panel.grid.minor.x = element_blank())
+  
+  
+  if (plot_type == "betas") {
+    
+    ## Plot betas
+    beta_plot <- NULL
+    for (i in grep("beta", names(labels), value = TRUE)) {
+      beta_plot <- rbind(beta_plot, plot_par(i, "gamma", plot = FALSE))
+    }
+    
+    levels <- paste0("beta", seq(1:nrow(beta_plot)))
+    beta_plot$name <- factor(beta_plot$name, levels = levels)
+    
+    ggplot(beta_plot, aes(group = name)) +
+      geom_pointrange(aes(y = NA, x = mean, xmin = lb, xmax = ub)) +
+      geom_vline(aes(xintercept = min), linetype = 3, col = "red") +
+      geom_vline(aes(xintercept = max), linetype = 3, col = "red") +
+      facet_wrap(~name, scales = "free_x") +
+      labs(y = "", x = "") +
+      theme_bw() +
+      theme(axis.text.y = element_blank(),
+            axis.text.x = element_text(size = 10, angle = 45, vjust = 0.7),
+            axis.title = element_text(size = 16, face = "bold"),
+            panel.grid.major.y = element_blank(),
+            panel.grid.minor.x = element_blank())
+    
+    
+  } else if (plot_type == "non_betas") {
+    ## Plot severity parameters
+    sev_plots <- NULL
+    for (i in grep("_D", names(labels), value = TRUE)) {
+      sev_plots[[i]] <- plot_par(i, "beta", plot = TRUE)
+    }
+    
+    sev <- sev_plots[[1]] / sev_plots[[2]] / sev_plots[[3]] / sev_plots[[4]]
+    
+    (start_date / sev) +
+      plot_layout(heights = c(0.25, 1))
+  }
+  
+}
+
+
+plot_ci_bar <- function(res, at, width = 1,
+                        min = 0.025, max = 0.975, col = "grey20",
+                        segments = FALSE, pt_col = NULL, horiz = TRUE, ...) {
+  cols  <- c("grey80", col)
+  qs <- quantile(res,
+                 probs = seq(min, max, by = 0.005),
+                 na.rm = TRUE)
+  
+  palette <- grDevices::colorRampPalette(cols)
+  if (segments) {
+    segments(y0 = at, x0 = min(res), x1 = max(res), col = cols[2])
+    points(y = rep(at, 2), x = range(res), col = cols[2], pch = "-")
+  }
+  ci_bands(quantiles = cbind(qs, qs),
+           y = at + c(-1, 1) * width,
+           palette = palette, leg = FALSE, horiz = horiz)
+  
+  if (is.null(pt_col)) pt_col <- col
+  if (horiz) {
+    points(y = at, x = mean(res), col = "white", pch = 23, bg = pt_col, ...)
+  } else {
+    points(x = at, y = mean(res), col = "white", pch = 23, bg = pt_col, ...)
+  }
+}
+
+
+ci_bands <- function (quantiles, y, palette = NULL, cols = NULL, leg = TRUE, 
+                      leg_y = 0, leg_x = 1, horiz = TRUE, ...) 
+{
+  yy <- c(y, rev(y))
+  yy <- c(yy, yy[1])
+  n_bands <- (nrow(quantiles) - 1)/2 + 1
+  if (!is.null(palette)) {
+    cols <- do.call(what = palette, args = list(n = n_bands))
+  }
+  for (band in seq_len(n_bands)) {
+    x1 <- quantiles[band, ]
+    x2 <- quantiles[nrow(quantiles) + 1 - band, ]
+    x2 <- rev(x2)
+    x2 <- c(x2, x1[1])
+    if (horiz) {
+      polygon(y = yy, x = c(x1, x2), col = cols[band], 
+              border = NA)
+    }
+    else {
+      polygon(x = yy, y = c(x1, x2), col = cols[band], 
+              border = NA)
+    }
+  }
+  if (leg) {
+    leg_cols <- which(row.names(quantiles) %in% leg)
+    leg <- c(row.names(quantiles)[1], seq(5, 50, 5), "%")
+    leg[seq(2, 10, 2)] <- ""
+    legend(y = leg_y, x = leg_x, pch = 15, col = cols[leg_cols], 
+           legend = leg, border = NA, bty = "n", ...)
+  }
+}
+
+
+get_par_labels <- function(dat) {
+  
+  par_names <- unique(dat$fit$parameters$proposal$name)
+  beta_date <- ZamCovid:::numeric_date_as_date(dat$fit$samples$info$beta_date)
+  
+  n_betas <- length(beta_date)
+  
+  labels <- lapply(seq_len(n_betas), 
+                   function(x) {
+                     date_x <- as.character(beta_date[x])
+                     bquote(beta[.(x)] ~ (.(date_x)))
+                   })
+  names(labels) <- paste0("beta", seq_len(n_betas))
+  
+  plus <- "+"
+  labels <- c(labels,
+              alpha_D = expression(alpha["D"]),
+              mu_D_1 = expression(mu["D,1"]),
+              mu_D_2 = expression(mu["D,2"]),
+              p_G_D = expression(p[paste(G[D])]^max),
+              start_date = expression(t["seed"])
+  )
+  labels
+}

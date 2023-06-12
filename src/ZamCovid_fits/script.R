@@ -57,6 +57,15 @@ png("plots/infections_inc.png", units = "in", width = 8, height = 10, res = 300)
 plot_infection_incidence(dat)
 dev.off()
 
+png("plots/forest_betas.png", units = "in", width = 14, height = 12, res = 300)
+plot_forest(dat, plot_type = "betas")
+dev.off()
+
+png("plots/forest_non_betas.png", units = "in", width = 6, height = 10, res = 300)
+plot_forest(dat, plot_type = "non_betas")
+dev.off()
+
+
 # Epidemics9 plot
 col1 <- (
   (plot_serology(dat$fit$samples, data_full, over15_only = TRUE) +
