@@ -1,59 +1,69 @@
 create_priors <- function(pars_info) {
   
+  ### Set a beta prior for p_G_D
+  # We will zero the probabilities of going into hospital for now as there are
+  # no reliable sources of hospitalisation data. Fitted p_G_D will reflect
+  # overall probability of death by mechanistically assuming all deaths
+  # happen outside of hospital. This simplifies things, as we do not have
+  # to make any wild assumptions around p_H or p_H_D in relation to p_G_D!
+  regional_ps <- data.frame(
+    param = "p_G_D",
+    mean = 0.0916337063, # Max p_G_D approximated from Brazeau et al. IFRs
+    lower = 0.05 # mean - lower = lower range of prior
+  )
+  
+  p_hps <- signif(mapply(FUN = fit_beta,
+                         mean = regional_ps$mean,
+                         lower = regional_ps$mean - regional_ps$lower,
+                         ci = 0.95))
+  p_hps <- as.data.frame(t(p_hps))
+  colnames(p_hps) <- c("shape1", "shape2")
+  
+  regional_ps <- cbind(regional_ps, p_hps)
+  
   ### set beta_priors
   beta_hps <- data.frame(
-    scale = rep(NA, 3),
-    shape = rep(NA, 3)
+    scale = rep(NA, 2),
+    shape = rep(NA, 2)
   )
-  row.names(beta_hps) <- c("beta1", "beta2", "beta3")
+  row.names(beta_hps) <- c("beta1", "beta2")
   
   ## beta value that would give R0 = 1
   ## assumes Wildtype R0 was ~ 2.58 in Zambia
   R0_fac <- 0.0367
   
   ## beta1 aim for 95% CI of [2.5, 3.5]
-  beta_hps["beta1", ] <- fit_gamma(mean_D = 2.979,
-                                   lower_D = 2.5,
-                                   upper_D = 3.5,
+  beta_hps["beta1", ] <- fit_gamma(mean_D = 2.58,
+                                   lower_D = 2.025,
+                                   upper_D = 3.125,
                                    ci = 0.95)
   beta_hps["beta1", "scale"] <- beta_hps["beta1", "scale"] * R0_fac
-  ## beta2 aim for 95% CI of [0.4, 3.5]
-  beta_hps["beta2", ] <- fit_gamma(mean_D = 1.562,
-                                   lower_D = 0.4,
-                                   upper_D = 3.5,
+  ## beta2 aim for 95% CI of [0.8, 3.5]
+  beta_hps["beta2", ] <- fit_gamma(mean_D = 1.756,
+                                   lower_D = 1.125,
+                                   upper_D = 3.125,
                                    ci = 0.95)
   beta_hps["beta2", "scale"] <- beta_hps["beta2", "scale"] * R0_fac
-  ## beta3 aim for 95% CI of [0.4, 3]
-  # beta_hps["beta3", ] <- fit_gamma(mean_D = 1.395,
-  #                                  lower_D = 0.4,
-  #                                  upper_D = 3,
-  #                                  ci = 0.95)
-  # beta_hps["beta3", "scale"] <- beta_hps["beta3", "scale"] * R0_fac
-  
-  ## After beta3 we use the same prior distribution
-  beta_hps <-
-    beta_hps[c(rep("beta1", 3), rep("beta2", 44)), ]# , rep("beta3", 41)), ]
+
+  beta_hps <- beta_hps[c(rep("beta1", 10), rep("beta2", 32)), ]
   rownames(beta_hps) <- paste0("beta", seq_len(nrow(beta_hps)))
   beta_names <- rownames(beta_hps)
   
+  pars <- c(beta_names, unique(regional_ps$param))
   
   ## Make data frame of all parameters to fit
-  hps <- matrix(NA, nrow = length(beta_names), ncol = 7,
-                dimnames = list(beta_names, c("par", "region", "scale", "shape",
+  hps <- matrix(NA, nrow = length(pars), ncol = 7,
+                dimnames = list(pars, c("par", "region", "scale", "shape",
                                         "shape1", "shape2", "correlation")))
   hps <- as.data.frame(hps)
-  hps$par <- beta_names
+  hps$par <- pars
   hps$region <- "kabwe"
   hps[beta_names, colnames(beta_hps)] <- beta_hps
+  hps[unique(regional_ps$param), c("shape1", "shape2")] <- as.matrix(p_hps)
   
   ret <- priors_wide_to_long(hps)
   
-  par <- c("p_G_D", "alpha_D", "mu_D_1", "mu_D_2")
-  # We will zero the probabilities of going into hospital for now as there are
-  # no reliable sources of hospitalisation data. Fitted p_G_D will reflect
-  # overall probability of death by mechanistically assuming all deaths
-  # happen outside of hospital. This simplifies things, as we do not have
-  # to make any wild assumptions around p_H or p_H_D in relation to p_G_D!
+  par <- c("alpha_D", "mu_D_1", "mu_D_2")
   
   extra_uniform <-
     expand.grid(region = regions,
