@@ -24,6 +24,9 @@ artefacts:
         - plots/fits_rt.png
         - plots/fits_ifr.png
         - plots/infections_inc.png
+        - plots/epidemics.png
+        - plots/forest_betas.png
+        - plots/forest_non_betas.png
   - data:
       description: PMCMC results for analysis
       filenames:

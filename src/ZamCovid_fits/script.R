@@ -45,16 +45,47 @@ png("plots/pmcmc_traceplots.png", units = "in", width = 16, height = 12, res = 3
 plot_fit_traces(dat$fit$samples)
 dev.off()
 
-png("plots/fits_serology.png", units = "in", width = 10, height = 6, res = 300)
-plot_serology(samples, data_fit)
+png("plots/fits_serology.png", units = "in", width = 8, height = 8, res = 300)
+plot_serology(dat$fit$samples, data_full)
 dev.off()
 
-png("plots/fits_deaths.png", units = "in", width = 10, height = 6, res = 300)
-plot_deaths(samples, data_fit, age = FALSE)
+png("plots/fits_deaths.png", units = "in", width = 10, height = 10, res = 300)
+plot_deaths(dat, data_fit) | plot_deaths_disag(dat)
 dev.off()
 
 png("plots/infections_inc.png", units = "in", width = 8, height = 10, res = 300)
 plot_infection_incidence(dat)
 dev.off()
+
+png("plots/forest_betas.png", units = "in", width = 14, height = 12, res = 300)
+plot_forest(dat, plot_type = "betas")
+dev.off()
+
+png("plots/forest_non_betas.png", units = "in", width = 6, height = 10, res = 300)
+plot_forest(dat, plot_type = "non_betas")
+dev.off()
+
+
+# Epidemics9 plot
+col1 <- (
+  (plot_serology(dat$fit$samples, data_full, over15_only = TRUE) +
+     theme(axis.text.x = element_blank())) /
+    (plot_rt(dat) + theme(axis.text.x = element_blank())) /
+    plot_infection_incidence(dat)) +
+  plot_layout(heights = c(0.3, 0.3, 1))
+
+col2 <- ((plot_deaths(dat, data_fit, week_only = TRUE) +
+  theme(axis.text.x = element_blank(),
+        legend.position = "none")) /
+  (plot_severity(dat, age = FALSE) +
+     theme(axis.text.x = element_blank())) / 
+  plot_deaths_disag(dat, plot_age = FALSE)) +
+  plot_layout(heights = c(0.3, 0.3, 1))
+
+png("plots/epidemics.png", units = "in", width = 12, height = 12, res = 300)
+(col1 | col2) +
+  plot_annotation(tag_levels = "A")
+dev.off()
+
 
 rmarkdown::render("fit_results.Rmd")

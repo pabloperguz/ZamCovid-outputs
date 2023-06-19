@@ -8,7 +8,7 @@
 root_dir <- paste0(orderly::orderly_config()$root, "/src/")
 ## ---------------------------
 short_run <- TRUE
-date <- "2021-12-31"
+date <- "2021-09-30"
 assumptions <- "central"
 ## can be: central,
 ##         fit_serology_only, fit_deaths_only,
@@ -124,11 +124,11 @@ orderly::orderly_cleanup(failed_only = TRUE)
 
 ## 0. Install ZamCovid ----
 # Sys.unsetenv("GITHUB_PAT")
-# remotes::install_github("pabloperguz/ZamCovid",
+# remotes::install_github("mrc-ide/ZamCovid",
 #                         ref = "master",
 #                         force = TRUE)
 # 
-# remotes::install_github("pabloperguz/ZamCovid",
+# remotes::install_github("mrc-ide/ZamCovid",
 #                         ref = "master",
 #                         force = TRUE,
 #                         lib = "Z:/Pablo/ZamCovid-outputs/contexts/lib/windows/4.2")
@@ -161,7 +161,7 @@ obj <- didehpc::queue_didehpc(ctx, config = cfg)
 
 fits <- obj$enqueue(orderly::orderly_run('ZamCovid_fits',
                                          parameters = list(region = "kabwe",
-                                                           date = "2021-12-31",
+                                                           date = "2021-09-30",
                                                            short_run = FALSE,
                                                            deterministic = TRUE,
                                                            assumptions = "central"),

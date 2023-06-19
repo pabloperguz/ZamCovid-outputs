@@ -41,12 +41,9 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     
     
     # Now set assumptions of what proportion of baseline deaths are observed
-    ## TODO: at the moment, 0.75 explains better the deaths data. A crude
-    ##       empiric estimation is 0.567 unobserved deaths comparing
-    ##       available timeseries vs linelist in 2020. Will need to
-    ##       properly investigate and perhaps within replacement function
-    ##       could do pmin(base_death, observed$deaths_all)
-    deaths_observed <- 0.8 # 0.433
+    ## TODO: A crude empiric estimation is 0.567 unobserved deaths comparing
+    ##       available timeseries vs linelist in 2020.
+    deaths_observed <- 0.567
     historic_deaths <- infer_baseline_deaths(historic_deaths, date,
                                              inflate = 1 / deaths_observed)
     base_death_date <-
@@ -145,7 +142,7 @@ create_baseline <- function(region, date, epoch_dates, pars, assumptions,
     # direct
     "start_date", beta_names,
     # severity
-    "p_G_D", "alpha_D"
+    "p_G_D", "alpha_D", "mu_D_1", "mu_D_2"
   )
   stopifnot(setequal(to_fit_all, names(pars_info)))
   
