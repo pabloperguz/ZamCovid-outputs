@@ -1,0 +1,56 @@
+script: script.R
+
+parameters:
+  deterministic:
+    default: false
+  assumptions:
+    default: "central"
+  
+artefacts:
+  - data:
+      description: linear model predicting historic deaths
+      filenames:
+        - historic_deaths.html
+  - data:
+      description: fitted hyperparameters for priors
+      filenames:
+        - parameters_base.rds
+        - parameters_info.csv
+        - parameters_prior.csv
+        - parameters_proposal.csv
+        - parameters_transform.R
+        - data_multidistrict.csv
+
+packages:
+  - ZamCovid
+  - tidyr
+  - dplyr
+  - forcats
+  - magrittr
+  - jtools
+  - ggplot2
+  - patchwork
+
+sources:
+  - R/support.R
+  - R/priors.R
+  - R/baseline.R
+  - R/transform.R
+  - R/vaccine.R
+  
+global_resources:
+  util.R: util.R
+
+resources:
+  - pars
+  - data/data_multidistrict.csv
+  - data/vaccine_efficacy.csv
+  - data/vaccine_uptake.csv
+  - data/support_severity.csv
+  - data/data_vaccination.csv
+  - data/population.csv
+  - data/progression_data.csv
+  - historic_deaths.Rmd
+
+requester: ZamCovid
+author: Pablo

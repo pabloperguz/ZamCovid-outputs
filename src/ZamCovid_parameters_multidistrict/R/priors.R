@@ -45,7 +45,7 @@ create_priors <- function(pars_info) {
                                    ci = 0.95)
   beta_hps["beta2", "scale"] <- beta_hps["beta2", "scale"] * R0_fac
 
-  beta_hps <- beta_hps[c(rep("beta1", 10), rep("beta2", 32)), ]
+  beta_hps <- beta_hps[c(rep("beta1", 10), rep("beta2", 12)), ]
   rownames(beta_hps) <- paste0("beta", seq_len(nrow(beta_hps)))
   beta_names <- rownames(beta_hps)
   
@@ -53,11 +53,11 @@ create_priors <- function(pars_info) {
   
   ## Make data frame of all parameters to fit
   hps <- matrix(NA, nrow = length(pars), ncol = 7,
-                dimnames = list(pars, c("par", "region", "scale", "shape",
+                dimnames = list(pars, c("par", "district", "scale", "shape",
                                         "shape1", "shape2", "correlation")))
   hps <- as.data.frame(hps)
   hps$par <- pars
-  hps$region <- "kabwe"
+  hps$district <- "kabwe"
   hps[beta_names, colnames(beta_hps)] <- beta_hps
   hps[unique(regional_ps$param), c("shape1", "shape2")] <- as.matrix(p_hps)
   
@@ -66,7 +66,7 @@ create_priors <- function(pars_info) {
   par <- c("alpha_D", "mu_D_1", "mu_D_2")
   
   extra_uniform <-
-    expand.grid(region = regions,
+    expand.grid(district = districts,
                 type = "null",
                 name = par,
                 gamma_scale = NA_real_,
@@ -167,10 +167,10 @@ priors_wide_to_long <- function(d) {
           shape1 = "beta_shape1",
           shape2 = "beta_shape2")
   d <- prior_rename(d, names(tr), tr)
-  d <- d[c("region", "type", tr)]
+  d <- d[c("district", "type", tr)]
   
   extra <- data.frame(
-    region = "kabwe",
+    district = "kabwe",
     type = "null",
     name = "start_date",
     gamma_scale = NA_real_,
@@ -181,14 +181,15 @@ priors_wide_to_long <- function(d) {
   
   d <- rbind(d, extra)
   
-  ## Not all parameters are region-specific, let's fix that too:
+  ## Not all parameters are district-specific, let's fix that too:
   f <- function(p) {
+    
     s <- d[d$name == p, ]
-    msg <- setdiff(d$region, s$region)
+    msg <- setdiff(d$district, s$district)
     if (length(msg) > 0) {
-      i <- match("england", s$region)
+      i <- match("kabwe", s$district)
       extra <- s[rep(i, length(msg)), ]
-      extra$region <- msg
+      extra$district <- msg
       s <- rbind(s, extra)
     }
     s
@@ -196,10 +197,10 @@ priors_wide_to_long <- function(d) {
   
   res <- do.call(rbind, lapply(unique(d$name), f))
   
-  ## We must have all parameters for all regions, and no doubles
-  stopifnot(all(table(res$region, res$name) == 1))
+  ## We must have all parameters for all districts, and no doubles
+  stopifnot(all(table(res$district, res$name) == 1))
   
-  res <- res[order(res$region, res$name), ]
+  res <- res[order(res$district, res$name), ]
   rownames(res) <- NULL
   res
 }

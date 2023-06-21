@@ -19,6 +19,10 @@ data <- data.frame(date = seq.Date(start_date, end_date, "day")) %>%
   left_join(., cases, by = "date") %>%
   left_join(., deaths, by = "date")
 
+# Mulenga et al. report Kabwea seroprevalence of 5.6% in July (all ages) n = 646
+# https://doi.org/10.1016/S2214-109X(21)00053-X
+data[data$date == "2020-07-15", c("sero_positive_all", "sero_total_all")] <- c(36, 646)
+
 data <- list(
   data = data,
   historic = historic_deaths)

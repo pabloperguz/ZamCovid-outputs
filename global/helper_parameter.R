@@ -3,13 +3,19 @@ source("global/util.R")
 
 add_parameter <- function(name, initial, min, max, proposal,
                           assumptions = "central", model = "deterministic",
-                          integer = FALSE, include = TRUE) {
+                          multidistrict = FALSE, integer = FALSE, include = TRUE) {
+  
+  if (multidistrict) {
+    dir <- "src/ZamCovid_parameters_multidistrict/pars"
+  } else {
+    dir <- "src/ZamCovid_parameters/pars"
+  }
   
   info_filename <-
-    paste("src/ZamCovid_parameters/pars", assumptions, model,
+    paste(dir, assumptions, model,
           "info.csv", sep = "/")
   proposal_filename <- 
-    paste("src/ZamCovid_parameters/pars", assumptions, model,
+    paste(dir, assumptions, model,
           "proposal.csv", sep = "/")
   
   parameters_info <- read_csv(info_filename) 
@@ -65,13 +71,20 @@ add_parameter <- function(name, initial, min, max, proposal,
 }
 
 
-remove_parameter <- function(name, assumptions = "central", model = "deterministic") {
+remove_parameter <- function(name, assumptions = "central", model = "deterministic",
+                             multidistrict = FALSE) {
+  
+  if (multidistrict) {
+    dir <- "src/ZamCovid_parameters_multidistrict/pars"
+  } else {
+    dir <- "src/ZamCovid_parameters/pars"
+  }
   
   info_filename <-
-    paste("src/ZamCovid_parameters/pars", assumptions, model,
+    paste(dir, assumptions, model,
           "info.csv", sep = "/")
   proposal_filename <- 
-    paste("src/ZamCovid_parameters/pars",assumptions, model,
+    paste(dir,assumptions, model,
           "proposal.csv", sep = "/")
   
   parameters_info <- read_csv(info_filename)
@@ -88,14 +101,20 @@ remove_parameter <- function(name, assumptions = "central", model = "determinist
 }
 
 
-rename_parameter <- function(old_name, new_name,
+rename_parameter <- function(old_name, new_name, multidistrict = FALSE,
                              assumptions = "central", model = "deterministic") {
   
+  if (multidistrict) {
+    dir <- "src/ZamCovid_parameters_multidistrict/pars"
+  } else {
+    dir <- "src/ZamCovid_parameters/pars"
+  }
+  
   info_filename <-
-    paste("src/ZamCovid_parameters/pars", assumptions, model,
+    paste(dir, assumptions, model,
           "info.csv", sep = "/")
   proposal_filename <- 
-    paste("src/ZamCovid_parameters/pars", assumptions, model,
+    paste(dir, assumptions, model,
           "proposal.csv", sep = "/")
   
   
@@ -118,14 +137,20 @@ rename_parameter <- function(old_name, new_name,
 
 
 add_beta <- function(beta_name, beta_initial, min = 0, max = 1,
-                     proposal = NULL, factor = NULL,
+                     proposal = NULL, factor = NULL, multidistrict = FALSE,
                      assumptions = "central", model = "deterministic") {
   
+  if (multidistrict) {
+    dir <- "src/ZamCovid_parameters_multidistrict/pars"
+  } else {
+    dir <- "src/ZamCovid_parameters/pars"
+  }
+  
   info_filename <-
-    paste("src/ZamCovid_parameters/pars", assumptions, model,
+    paste(dir, assumptions, model,
           "info.csv", sep = "/")
   proposal_filename <- 
-    paste("src/ZamCovid_parameters/pars", assumptions, model,
+    paste(dir, assumptions, model,
           "proposal.csv", sep = "/")
   
   parameters_info <- read_csv(info_filename)
@@ -186,45 +211,16 @@ add_beta <- function(beta_name, beta_initial, min = 0, max = 1,
 }
 
 
-swap_regions_proposal_and_info <- function(region_edit, region_source,
-                                           assumptions = "central", 
-                                           deterministic = TRUE) {
-  
-  if (deterministic) {
-    deterministic <- "deterministic"
-  } else {
-    deterministic <- "stochastic"
-  }
-  
-  info_filename <-
-    paste("src/ZamCovid_parameters/pars", assumptions, deterministic,
-          "info.csv", sep = "/")
-  proposal_filename <- 
-    paste("src/ZamCovid_parameters/pars", assumptions, deterministic,
-          "proposal.csv", sep = "/")
-  
-  parameters_info <- read_csv(info_filename)
-  
-  parameters_info[parameters_info$region == region_edit, "initial"] <-
-    parameters_info[parameters_info$region == region_source, "initial"]
-  
-  write.csv(parameters_info, info_filename, row.names = FALSE)
-  
-  
-  parameters_proposal <- read_csv(proposal_filename)
-  
-  par_cols <- 3:ncol(parameters_proposal)
-  
-  parameters_proposal[parameters_proposal$region == region_edit, par_cols] <-
-    parameters_proposal[parameters_proposal$region == region_source, par_cols]
-  
-  write.csv(parameters_proposal, proposal_filename, row.names = FALSE)
-  
-}
-
 
 nudge_info <- function(region, pars, factor = NULL, value = NULL,
+                       multidistrict = FALSE,
                        assumptions = "central", deterministic = TRUE) {
+  
+  if (multidistrict) {
+    dir <- "src/ZamCovid_parameters_multidistrict/pars"
+  } else {
+    dir <- "src/ZamCovid_parameters/pars"
+  }
   
   if (deterministic) {
     deterministic <- "deterministic"
@@ -233,7 +229,7 @@ nudge_info <- function(region, pars, factor = NULL, value = NULL,
   }
   
   info_filename <-
-    paste("src/ZamCovid_parameters/pars", assumptions, deterministic,
+    paste(dir, assumptions, deterministic,
           "info.csv", sep = "/")
   
   info <- read_csv(info_filename)
@@ -259,28 +255,32 @@ nudge_info <- function(region, pars, factor = NULL, value = NULL,
 }
 
 
-## TODO: This function hasn't been used for a while; update or remove
-zero_a_proposal <- function(name, regions,
-                            assumptions = "central", deterministic = TRUE) {
+add_district <- function(name, source, assumptions = "central", model = "deterministic") {
   
-  if (deterministic) {
-    deterministic <- "deterministic"
-  } else {
-    deterministic <- "stochastic"
-  }
+  
+  dir <- "src/ZamCovid_parameters_multidistrict/pars"
+  
+  info_filename <-
+    paste(dir, assumptions, model,
+          "info.csv", sep = "/")
   proposal_filename <- 
-    paste("src/ZamCovid_parameters/pars", assumptions, deterministic,
+    paste(dir, assumptions, model,
           "proposal.csv", sep = "/")
   
+  parameters_info <- read_csv(info_filename) 
   
-  proposal <- read_csv(proposal_filename)
+  new_info <- parameters_info[parameters_info$district == source, ]
+  new_info$district <- name
   
-  proposal[proposal$region %in% regions, name] <- 0
-  proposal[proposal$region %in% regions & proposal$name == name,
-           !names(proposal) %in% c("region", "name")] <- 0
-  proposal <- dplyr::arrange(proposal, region, name)
-  col_order <- c(1, 2, 2 + order(names(proposal)[-c(1,2)]))
-  proposal <- proposal[, col_order]
+  parameters_info <- rbind(parameters_info, new_info)
+  write.csv(parameters_info, info_filename, row.names = FALSE)
   
-  write.csv(proposal, proposal_filename, row.names = FALSE)
-}
+  
+  parameters_proposal <- read_csv(proposal_filename)
+  
+  new_prop <- parameters_proposal[parameters_proposal$district == source, ]
+  new_prop$district <- name
+  
+  parameters_proposal <- rbind(parameters_proposal, new_prop)
+  write.csv(parameters_proposal, proposal_filename, row.names = FALSE)
+}  
