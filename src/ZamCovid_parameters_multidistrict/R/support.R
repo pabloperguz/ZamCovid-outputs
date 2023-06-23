@@ -36,10 +36,16 @@ update_proposal <- function(info, proposal) {
 
 
 infer_baseline_deaths <- function(historic, date, alpha = 0.95,
-                                  inflate = 1 / 0.516) {
+                                  inflate = 1 / 0.516, debug = FALSE) {
   
-  expected_model <- historic_deaths %>%
-    mutate(deaths = floor(deaths * inflate)) %>%
+  stopifnot(all(is.integer(historic$year)))
+  
+  expected_model <- historic %>%
+    filter(year < 2020) %>%
+    mutate(deaths = floor(deaths * inflate),
+           month_name = month,
+           month = factor(match(month, month.abb)),
+           site = "historic") %>%
     nest_by(site) %>%
     mutate(model = list(lm(deaths ~ year + month, data = data))) %>%
     mutate(sigma = broom::glance(model)$sigma,
@@ -63,28 +69,26 @@ infer_baseline_deaths <- function(historic, date, alpha = 0.95,
            se_fit_pred = (ub - expected) / t_df)
   
   ## Output linear model diagnostics for scrutiny
-  mod <- expected_model$model[[1]]
-  dat <- expected_model$data[[1]]
+  if (debug) {
+    browser()
+    mod <- expected_model$model[[1]]
+    dat <- expected_model$data[[1]]
+    
+    names(mod$coefficients)[3:13] <- month.abb[-1]
+    
+    p1 <- jtools::plot_summs(mod, plot.distributions = TRUE)
+    p2 <- ggplot(dat, aes(x = year, y = deaths)) +
+      geom_point() +
+      scale_x_continuous(breaks = c(2017:2019)) +
+      scale_y_continuous(expand = c(0, 0), limits = c(100, 250)) +
+      stat_smooth(method = "lm") +
+      theme_minimal() +
+      theme(axis.line = element_line())
+    
+  }
   
-  names(mod$coefficients)[3:13] <- month.abb[-1]
-  
-  p1 <- jtools::plot_summs(mod, plot.distributions = TRUE)
-  p2 <- ggplot(dat, aes(x = year, y = deaths)) +
-    geom_point() +
-    scale_x_continuous(breaks = c(2017:2019)) +
-    scale_y_continuous(expand = c(0, 0), limits = c(100, 250)) +
-    stat_smooth(method = "lm") +
-    theme_minimal() +
-    theme(axis.line = element_line())
-  
-  # Extract only death rate from model for replacement function
-  expected_deaths <- baseline_death_rate(expected_deaths, date)
-  
-  list(
-    expected_deaths = expected_deaths,
-    model = mod,
-    plot = p1 + p2
-  )
+  # Output only death rate from model for replacement function
+  baseline_death_rate(expected_deaths, date)
 }
 
 

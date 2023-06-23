@@ -8,10 +8,6 @@ parameters:
   
 artefacts:
   - data:
-      description: linear model predicting historic deaths
-      filenames:
-        - historic_deaths.html
-  - data:
       description: fitted hyperparameters for priors
       filenames:
         - parameters_base.rds
@@ -50,7 +46,7 @@ resources:
   - data/data_vaccination.csv
   - data/population.csv
   - data/progression_data.csv
-  - historic_deaths.Rmd
+  - data/historic_deaths.csv
 
 requester: ZamCovid
 author: Pablo

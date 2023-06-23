@@ -3,12 +3,10 @@ compute_severity <- function(pars, severity_data) {
   ## WARNING: this is a hack
   list2env(pars, environment())
   
-  # Time-varying probability of death (mechanistically of dying outside hospital)
-  mu_D_date <- ZamCovid:::numeric_date(c("2020-08-15",
-                                         "2020-12-01", "2021-03-15",
-                                         "2021-05-01"))
-  mu_D_vect <- c(1, mu_D_1, mu_D_1, mu_D_2)
-  p_G_D_value <- p_G_D * mu_D_vect
+  # Fitted probability of death given clinical disease
+  # This is applied to the age band with the highest value 
+  # The rest of the p_G_D spline from Brazeau et al. gets re-scaled proportionally
+  p_G_D_value <- p_G_D
   
   # Simplifying assumptions
   p_star_value <- 0.1 # Probability of being admitted with positive PCR
@@ -22,7 +20,7 @@ compute_severity <- function(pars, severity_data) {
   severity <- ZamCovid::ZamCovid_parameters_severity(
     dt,
     severity_data,
-    p_G_D = list(value = p_G_D_value, date = mu_D_date),
+    p_G_D = list(value = p_G_D_value),
     p_H = list(value = p_H_value),
     p_H_D = list(value = p_H_D_value),
     p_star = list(value = p_star_value))
@@ -87,7 +85,9 @@ compute_observation <- function(pars) {
   list2env(pars, environment())
   
   observation <- ZamCovid::ZamCovid_parameters_observation()
+  
   observation$kappa_death_all <- 1 / alpha_D
+  observation$rho_pcr_tests <- rho_pcr_tests
   
   observation
 }
@@ -95,7 +95,7 @@ compute_observation <- function(pars) {
 
 make_transform <- function(baseline) {
   
-  expected <- c("date", "region", "population", "epoch_dates",
+  expected <- c("date", "region", "population",
                 "beta_date", "beta_names",
                 "severity_data", "progression_data",
                 "sens_and_spec", "seed_size", "seed_pattern",
@@ -110,11 +110,8 @@ make_transform <- function(baseline) {
                 "n_doses")
   stopifnot(setequal(expected, names(baseline)))
   
-  epoch_dates <- baseline$epoch_dates
-  
-  
   expected <- c("start_date", baseline$beta_names, "p_G_D", "alpha_D",
-                "mu_D_1", "mu_D_2")
+                "rho_pcr_tests")
   
   function(pars) {
     

@@ -1,13 +1,29 @@
 
-create_baseline <- function(district, date, epoch_dates, pars, assumptions,
-                            historic_deaths = NULL) {
-  browser()
+create_baseline <- function(district, date, pars, assumptions) {
+  
   pars_info <- pars$info
   pars_vcv <- pars$proposal
   
   message(sprintf("Creating baseline for '%s'", district))
-  pars_info <- pars_info[pars_info$region == district | is.na(pars_info$region), ]
+  pars_info <- pars_info[pars_info$district == district | is.na(pars_info$district), ]
   pars_info <- setNames(pars_info$initial, pars_info$name)
+  
+  # Beta change points - A vector of date (strings) for the beta parameters.
+  # We are agnostic as to the effect of official NPI dates at specific dates
+  # This is thus just a vector of monthly dates
+  beta_date <- as.character(
+    seq.Date(as.Date("2020-03-01"), as.Date(date), "2 weeks"))
+  beta_names <- sprintf("beta%d", seq_along(beta_date))
+  
+  # Set of parameters that will be fitted for each model type
+  to_fit_all <- c(
+    # direct
+    "start_date", beta_names,
+    # severity
+    "p_G_D", "alpha_D", "rho_pcr_tests"
+  )
+  stopifnot(setequal(to_fit_all, names(pars_info)))
+  
   
   ## 1. Set up basic variables ----
   date <- as.Date(date)
@@ -24,11 +40,11 @@ create_baseline <- function(district, date, epoch_dates, pars, assumptions,
   progression_data <- read_csv("data/progression_data.csv")
   severity_data <- read_csv("data/support_severity.csv")
   population <- read_csv("data/population.csv")
-  
+  historic_deaths <- read_csv("data/historic_deaths.csv")
   
   ## 3. Calculate district population and baseline deaths ----
   
-  # We don't have population data for the districts, only at the national level
+  # We don't have population data for some districts, only at the national level
   # for 2018. N was 18,383,956 nationally and 2022 census indicates
   # it grew to 19,610,769. We'll assume the same growth and same age
   # distribution for the districts.
@@ -46,111 +62,140 @@ create_baseline <- function(district, date, epoch_dates, pars, assumptions,
   if (district == "kabwe") {
     
     n_district <- ceiling(230802 * g)
-    population$n <- round((population$n / sum(population$n)) * n_district) 
+    historic_deaths <- historic_deaths %>%
+      filter(district == district) %>%
+      select(!district)
     
+  } else if (district == "lusaka") {
     
-    historic_deaths <- infer_baseline_deaths(historic_deaths, date,
-                                             inflate = 1 / deaths_observed)
-    base_death_date <-
-      ZamCovid:::numeric_date(historic_deaths$expected_deaths$date)
-    base_death_date[1] <- 0
-    base_death_value <- historic_deaths$expected_deaths$rate
+    n_district <- ceiling(3041789)
+    historic_deaths <- historic_deaths %>%
+      filter(district == district) %>%
+      select(!district)
     
+  } else if (district == "livingstone") {
     
-    ## Cross-immunity assumptions
-    # We have a single-strain model that explicitly accounts for protection vs
-    # re-infection after recovery from infection. As a proxy of VOC emergence
-    # the value cross_immunity (% protection conferred) can be time-varying.
-    # Beta was first detected in Zambia on 2020-12-16, but cases had already
-    # been increasing from early December
-    # https://www.cdc.gov/mmwr/volumes/70/wr/mm7008e2.htm
-    # Gill et al. (https://bmjopen.bmj.com/content/12/12/e066763) estimated
-    # Beta detection in Lusaka (mortuaty) peaked in January 2021 and Delta
-    # in June 2021.
-    # Lastly, no reliable data for Omicron emergence. News feed indicates 
-    # first case detected on 2021-12-04
-    # We will assume same values of protections as in England Perez-Guzman et al.
-    # https://www.medrxiv.org/content/10.1101/2023.02.10.23285516v2
-    cross_immunity_date <-
-      c(0, ZamCovid:::numeric_date(c("2020-12-01", "2021-01-31",
-                                     "2021-03-15", "2021-06-30",
-                                     "2021-11-20", "2021-12-31")))
-    cross_immunity_value <- c(1, 1, 0.95, 0.95, 0.85, 0.85, 0.25)
+    n_district <- ceiling(177393)
+    historic_deaths <- historic_deaths %>%
+      filter(district == district) %>%
+      select(!district)
     
-    # Now, set target p_G_D informed by IFR estimates with seroreversion
-    # from Brazeau et al. https://www.nature.com/articles/s43856-022-00106-7
-    brazeau_ifr <- c(0, 0.0001, 0.0001, 0.0002, 0.0003, 0.0004, 0.0006, 0.001,
-                     0.0016, 0.0024, 0.0038, 0.0059, 0.0092, 0.0143, 0.0223,
-                     0.0347, 0.0541, 0.0843, 0.164)
+  } else if (district == "ndola") {
     
-    # Their estimates are for 19 age brackets; we only have 16 so will aggregate
-    # 75_plus weighting by age distribution using the breakdown of 75+'s as per
-    # population estimates from US IDB (https://www.census.gov)
-    n_75_plus_brackets <- c(99000, 53004, 21234, 5617)
+    n_district <- ceiling(451246 * g)
+    historic_deaths <- historic_deaths %>%
+      filter(district == district) %>%
+      select(!district)
     
-    ifr_75_plus <- data.frame(n = n_75_plus_brackets) %>%
-      mutate(ifr = (tail(brazeau_ifr, 4) * n))
-    ifr_75_plus <- sum(ifr_75_plus$ifr) / sum(ifr_75_plus$n)
+  } else if (district == "solwezi") {
     
-    target_p_G_D <- data.frame(p_C = t(severity_data[1, 2:17])) %>%
-      `colnames<-`("p_C") %>%
-      mutate(ifr = c(brazeau_ifr[1:15], ifr_75_plus),
-             p_G_D = ifr / p_C)
+    n_district <- ceiling(332623 * g)
+    historic_deaths <- historic_deaths %>%
+      filter(district == district) %>%
+      select(!district)
     
-    severity_data[severity_data$Name == "p_G_D", 2:length(severity_data)] <- 
-      if (assumptions == "ifr_low") {
-        target_p_G_D$p_G_D * 0.9
-      } else if (assumptions == "ifr_high") {
-        target_p_G_D$p_G_D * 1.1
-      } else {
-        target_p_G_D$p_G_D
-      }
-    
-    ## Lastly, set assumptions of infection-induced immunity waning and
-    ## seroreversion/
-    
-    # Immunity waning assumption based on estimate of 24.7% remaining effectively
-    # protected at 12 months in Bobrovitz et al.
-    # https://linkinghub.elsevier.com/retrieve/pii/S1473309922008015
-    imm_waning <- data.frame(parameter = "gamma_R", value = 1 / (2 * 365))
-    if (assumptions == "imm_waning_slow") {
-      imm_waning$value <- 1 / (3 * 365)
-    } else if (assumptions == "imm_waning_fast") {
-      imm_waning$value <- 1 / (1 * 365)
+  } else {
+    stop("District not supported for analysis")
+  }
+   
+  population$n <- round((population$n / sum(population$n)) * n_district) 
+  
+  historic_deaths <- infer_baseline_deaths(historic_deaths, date,
+                                           inflate = 1 / deaths_observed)
+  base_death_date <-
+    ZamCovid:::numeric_date(historic_deaths$date)
+  base_death_date[1] <- 0
+  base_death_value <- historic_deaths$rate
+  
+   
+  ## 4. Define other key assumptions and sensitivity-analysis ----
+  
+  ## 4.a Cross-immunity assumptions
+  # We have a single-strain model that explicitly accounts for protection vs
+  # re-infection after recovery from infection. As a proxy of VOC emergence
+  # the value cross_immunity (% protection conferred) can be time-varying.
+  # Beta was first detected in Zambia on 2020-12-16, but cases had already
+  # been increasing from early December
+  # https://www.cdc.gov/mmwr/volumes/70/wr/mm7008e2.htm
+  # Gill et al. (https://bmjopen.bmj.com/content/12/12/e066763) estimated
+  # Beta detection in Lusaka (mortuaty) peaked in January 2021 and Delta
+  # in June 2021.
+  # Lastly, no reliable data for Omicron emergence. News feed indicates 
+  # first case detected on 2021-12-04
+  # We will assume same values of protections as in England Perez-Guzman et al.
+  # https://www.medrxiv.org/content/10.1101/2023.02.10.23285516v2
+  cross_immunity_date <-
+    c(0, ZamCovid:::numeric_date(c("2020-12-01", "2021-01-31",
+                                   "2021-03-15", "2021-06-30",
+                                   "2021-11-20", "2021-12-31")))
+  cross_immunity_value <- c(1, 1, 0.95, 0.95, 0.85, 0.85, 0.25)
+  
+  
+  ## 4.b Severity assumptions
+  # Now, set target p_G_D informed by IFR estimates with seroreversion
+  # from Brazeau et al. https://www.nature.com/articles/s43856-022-00106-7
+  brazeau_ifr <- c(0, 0.0001, 0.0001, 0.0002, 0.0003, 0.0004, 0.0006, 0.001,
+                   0.0016, 0.0024, 0.0038, 0.0059, 0.0092, 0.0143, 0.0223,
+                   0.0347, 0.0541, 0.0843, 0.164)
+  
+  # Their estimates are for 19 age brackets; we only have 16 so will aggregate
+  # 75_plus weighting by age distribution using the breakdown of 75+'s as per
+  # population estimates from US IDB (https://www.census.gov)
+  n_75_plus_brackets <- c(99000, 53004, 21234, 5617)
+  
+  ifr_75_plus <- data.frame(n = n_75_plus_brackets) %>%
+    mutate(ifr = (tail(brazeau_ifr, 4) * n))
+  ifr_75_plus <- sum(ifr_75_plus$ifr) / sum(ifr_75_plus$n)
+  
+  target_p_G_D <- data.frame(p_C = t(severity_data[1, 2:17])) %>%
+    `colnames<-`("p_C") %>%
+    mutate(ifr = c(brazeau_ifr[1:15], ifr_75_plus),
+           p_G_D = ifr / p_C)
+  
+  severity_data[severity_data$Name == "p_G_D", 2:length(severity_data)] <- 
+    if (assumptions == "ifr_low") {
+      target_p_G_D$p_G_D * 0.9
+    } else if (assumptions == "ifr_high") {
+      target_p_G_D$p_G_D * 1.1
+    } else {
+      target_p_G_D$p_G_D
     }
-    progression_data <- rbind(progression_data, imm_waning)
-    
-    # Krutikov et al. 2022 report median time to sero-rev with Abbott 242.5 days,
-    # but their population was CHR and CHW.
-    # (https://www.thelancet.com/journals/lanhl/article/PIIS2666-7568(21)00282-8/fulltext)
-    serorev <- data.frame(parameter = "gamma_sero_pos", value = 1 / 242.5)
-    if (assumptions == "serorev_fast") {
-      serorev$value <- 1 / (242.5 * 0.8)
-    } else if (assumptions == "serorev_slow") {
-      serorev$value <- 1 / (242.5 * 1.2)
-    }
-    progression_data <- rbind(progression_data, serorev)
-    
-    rmarkdown::render("historic_deaths.Rmd")
+  
+  
+  ## 4.c Infection-induced immunity waning and seroreversion
+  # Immunity waning assumption based on estimate of 24.7% remaining effectively
+  # protected at 12 months in Bobrovitz et al.
+  # https://linkinghub.elsevier.com/retrieve/pii/S1473309922008015
+  imm_waning <- data.frame(parameter = "gamma_R", value = 1 / (2 * 365))
+  if (assumptions == "imm_waning_slow") {
+    imm_waning$value <- 1 / (3 * 365)
+  } else if (assumptions == "imm_waning_fast") {
+    imm_waning$value <- 1 / (1 * 365)
+  }
+  progression_data <- rbind(progression_data, imm_waning)
+  
+  # Krutikov et al. 2022 report median time to sero-rev with Abbott 242.5 days,
+  # but their population was CHR and CHW.
+  # (https://www.thelancet.com/journals/lanhl/article/PIIS2666-7568(21)00282-8/fulltext)
+  serorev <- data.frame(parameter = "gamma_sero_pos", value = 1 / 242.5)
+  if (assumptions == "serorev_fast") {
+    serorev$value <- 1 / (242.5 * 0.8)
+  } else if (assumptions == "serorev_slow") {
+    serorev$value <- 1 / (242.5 * 1.2)
+  }
+  progression_data <- rbind(progression_data, serorev)
+  
+  
+  ## 4.d Serology and PCR sensitivity assumptions
+  sens_and_spec <- ZamCovid::ZamCovid_parameters_sens_and_spec()
+  if (assumptions == "sero_sens_low") {
+    sens_and_spec$sero_sensitivity <- 0.754
+  } else if (assumptions == "sero_sens_high") {
+    sens_and_spec$sero_sensitivity <- 0.99
   }
   
-  ## 3. Set-up basic model parameters ----
-  # Beta change points - A vector of date (strings) for the beta parameters.
-  # We are agnostic as to the effect of official NPI dates at specific dates
-  # This is thus just a vector of monthly dates
-  beta_date <- as.character(
-    seq.Date(as.Date("2020-03-01"), as.Date(date), "2 weeks"))
-  beta_names <- sprintf("beta%d", seq_along(beta_date))
-
-  # Set of parameters that will be fitted for each model type
-  to_fit_all <- c(
-    # direct
-    "start_date", beta_names,
-    # severity
-    "p_G_D", "alpha_D", "mu_D_1", "mu_D_2"
-  )
-  stopifnot(setequal(to_fit_all, names(pars_info)))
   
+  ## 5. Set-up basic model parameters ----
   
   ## Initial seeding: seed 10 per million over 1 day (4 steps)
   seed_size <- 10e-6 * sum(population[, "n"])
@@ -175,9 +220,9 @@ create_baseline <- function(district, date, epoch_dates, pars, assumptions,
                              P = 1 / rel_si_wildtype,
                              C_1 = 1 / rel_si_wildtype,
                              C_2 = 1 / rel_C_2_wildtype)
-  # browser() # 5.2 / mean_SI
   
-  ## 5. Set-up vaccination parameters and assumptions ----
+  
+  ## 6. Vaccination parameters and assumptions ----
   vaccine_eligibility_min_age <- 5
   mean_days_between_doses <- 7 * 11 # second dose starts 12 weeks after first
   mean_time_to_waned <- 24 * 7 # assume exponential with mean 24 weeks
@@ -235,14 +280,7 @@ create_baseline <- function(district, date, epoch_dates, pars, assumptions,
     rel_severity <- rel_severity$central
   }
   
-  ## Set serology assay sensitivity assumptions
-  sens_and_spec <- ZamCovid::ZamCovid_parameters_sens_and_spec()
-  if (assumptions == "sero_sens_low") {
-    sens_and_spec$sero_sensitivity <- 0.754
-  } else if (assumptions == "sero_sens_high") {
-    sens_and_spec$sero_sensitivity <- 0.99
-  }
-  
+
   ## Note that vaccine_uptake[i, j] is proportional uptake of dose j for group i 
   vaccine_uptake <- 
     array(uptake_by_age$central, c(length(uptake_by_age$central), 2))
@@ -259,7 +297,7 @@ create_baseline <- function(district, date, epoch_dates, pars, assumptions,
                         "2021-09-15")
   
   # vaccination <- 
-  #   vaccination_schedule(date, region, vaccine_uptake, 
+  #   vaccination_schedule(date, district, vaccine_uptake, 
   #                        vaccine_days_to_effect, data_vaccination,
   #                        n_doses, dose_start_dates)
   # 
@@ -275,9 +313,8 @@ create_baseline <- function(district, date, epoch_dates, pars, assumptions,
   
   ret <- list(
     date = date,
-    region = region,
+    region = district,
     population = population,
-    epoch_dates = ZamCovid:::numeric_date(epoch_dates),
     
     beta_date = ZamCovid:::numeric_date(beta_date),
     beta_names = beta_names,

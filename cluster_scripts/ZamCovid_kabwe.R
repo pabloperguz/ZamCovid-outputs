@@ -8,6 +8,7 @@ root_dir <- paste0(orderly::orderly_config()$root, "/src/")
 short_run <- TRUE
 date <- "2021-09-30"
 assumptions <- "central"
+districts <- c("kabwe", "lusaka", "livingstone", "ndola", "solwezi")
 ## can be: central,
 ##         fit_serology_only, fit_deaths_only,
 ##         imm_waning_fast, imm_waning_slow,
@@ -15,11 +16,14 @@ assumptions <- "central"
 ##         serorev_slow, serorev_fast
 ##         sero_sens_low, sero_sens_high
 deterministic <- TRUE
-env_keep <- c("root_dir", "short_run", "date", "assumptions",
+env_keep <- c("root_dir", "short_run", "date", "assumptions", "districts",
               "deterministic", "env_keep")
 # ---------------------------------
 
+
+#------------------------------------------------------------------------------
 ## I. Pipeline for Kabwe analysis only
+#------------------------------------------------------------------------------
 
 ## Ia. ZamCovid_data ----
 
@@ -115,7 +119,10 @@ rm(list = setdiff(ls(), env_keep))
 #----
 
 
+
+#------------------------------------------------------------------------------
 ## II. Pipeline for multi-district analysis
+#------------------------------------------------------------------------------
 
 ## IIa. ZamCovid_parameters_multidistrict ----
 
@@ -131,30 +138,10 @@ orderly::orderly_develop_clean()
 rm(list = setdiff(ls(), env_keep))
 
 # Run
-orderly::orderly_run("ZamCovid_parameters_multidistrict", use_draft = "newer")
-rm(list = setdiff(ls(), env_keep))
-
-#----
-
-
-## IIb. ZamCovid_parameters_multidistrict ----
-
-# Develop
-orderly::orderly_develop_start(
-  "ZamCovid_parameters",
-  parameters = list(assumptions = assumptions, date = date,
-                    deterministic = deterministic),
-  use_draft = "newer")
-setwd(paste0(root_dir, "ZamCovid_parameters"))
-file.edit("script.R")
-# Tidy up
-orderly::orderly_develop_clean()
-rm(list = setdiff(ls(), env_keep))
-
-# Run
-orderly::orderly_run("ZamCovid_parameters", parameters = list(
-  assumptions = assumptions, date = date, deterministic = deterministic),
-  use_draft = "newer")
+orderly::orderly_run("ZamCovid_parameters_multidistrict",
+                     parameters = list(assumptions = assumptions,
+                                       deterministic = deterministic),
+                     use_draft = "newer")
 rm(list = setdiff(ls(), env_keep))
 
 #----
@@ -163,27 +150,26 @@ rm(list = setdiff(ls(), env_keep))
 ## IIc. ZamCovid_fits_multidistrict ----
 
 # Develop
-orderly::orderly_develop_start("ZamCovid_fits",
-                               parameters = list(region = "kabwe",
-                                                 date = date,
+orderly::orderly_develop_start("ZamCovid_fits_multidistrict",
+                               parameters = list(district = "lusaka",
                                                  short_run = short_run,
                                                  assumptions = assumptions,
                                                  deterministic = deterministic),
                                use_draft = "newer")
-setwd(paste0(root_dir, "ZamCovid_fits"))
+setwd(paste0(root_dir, "ZamCovid_fits_multidistrict"))
 file.edit("script.R")
 # tidy up
 orderly::orderly_develop_clean()
 rm(list = setdiff(ls(), env_keep))
 
 # Run
-orderly::orderly_run("ZamCovid_fits",
-                     parameters = list(region = "kabwe",
-                                       date = date,
-                                       short_run = short_run,
-                                       assumptions = assumptions,
-                                       deterministic = deterministic),
-                     use_draft = "newer")
+lapply(districts,
+       function(r) orderly::orderly_run("ZamCovid_fits_multidistrict",
+                                        parameters = list(district = r,
+                                                          short_run = short_run,
+                                                          assumptions = assumptions,
+                                                          deterministic = deterministic),
+                                        use_draft = "newer"))
 rm(list = setdiff(ls(), env_keep))
 
 #----

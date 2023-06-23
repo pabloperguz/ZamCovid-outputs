@@ -4,21 +4,18 @@ version_check("ZamCovid", "0.1.0")
 
 data_multidistrict <- read_csv("data/data_multidistrict.csv")
 districts <- unique(data_multidistrict$district)
-date <- "2020-12-31"
+date <- "2020-09-30"
 
-## After starting with a model without vaccination
-## * early December 2020: vaccination starts, expand vaccine classes 
-epoch_dates <- c("2020-12-05")
-
-## Save all other data for use in the fitting task
+## Cap data and save for use in the fitting task
+stopifnot(max(data_multidistrict$date) >= as.Date(date))
+data_multidistrict <- data_multidistrict[data_multidistrict$date <= as.Date(date), ]
 write_csv(data_multidistrict, "data_multidistrict.csv")
 
 ## Load all parameters from the last run; creates priors, and updates
 ## new entries into the proposal matrix as needed.
 pars <- load_mcmc_parameters(assumptions, deterministic)
 
-baseline <- lapply(districts, create_baseline, date, 
-                   epoch_dates, pars, assumptions)
+baseline <- lapply(districts, create_baseline, date, pars, assumptions)
 names(baseline) <- districts
 
 message("Writing parameters_info.csv")

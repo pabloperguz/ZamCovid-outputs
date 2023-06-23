@@ -45,7 +45,7 @@ create_priors <- function(pars_info) {
                                    ci = 0.95)
   beta_hps["beta2", "scale"] <- beta_hps["beta2", "scale"] * R0_fac
 
-  beta_hps <- beta_hps[c(rep("beta1", 10), rep("beta2", 12)), ]
+  beta_hps <- beta_hps[c(rep("beta1", 10), rep("beta2", 6)), ]
   rownames(beta_hps) <- paste0("beta", seq_len(nrow(beta_hps)))
   beta_names <- rownames(beta_hps)
   
@@ -63,7 +63,7 @@ create_priors <- function(pars_info) {
   
   ret <- priors_wide_to_long(hps)
   
-  par <- c("alpha_D", "mu_D_1", "mu_D_2")
+  par <- c("alpha_D","rho_pcr_tests")
   
   extra_uniform <-
     expand.grid(district = districts,
