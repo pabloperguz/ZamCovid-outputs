@@ -34,9 +34,6 @@ sources:
   - support.R
   - fit_process.R
   - plot.R
-
-resources:
-  - fit_results.Rmd
   
 packages:
   - ZamCovid

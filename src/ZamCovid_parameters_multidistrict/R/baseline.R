@@ -59,49 +59,55 @@ create_baseline <- function(district, date, pars, assumptions) {
   n_zambia <- 19610769
   g <-  n_zambia / sum(population$n)
   
+  historic_deaths <- historic_deaths %>%
+    pivot_longer(!c(district, month), names_to = "year", values_to = "deaths") %>%
+    mutate(year = as.integer(year))
+  
   if (district == "kabwe") {
     
     n_district <- ceiling(230802 * g)
     historic_deaths <- historic_deaths %>%
-      filter(district == district) %>%
+      filter(district == "kabwe") %>%
       select(!district)
     
   } else if (district == "lusaka") {
     
     n_district <- ceiling(3041789)
     historic_deaths <- historic_deaths %>%
-      filter(district == district) %>%
+      filter(district == "lusaka") %>%
       select(!district)
     
   } else if (district == "livingstone") {
     
     n_district <- ceiling(177393)
     historic_deaths <- historic_deaths %>%
-      filter(district == district) %>%
+      filter(district == "livingstone") %>%
       select(!district)
     
   } else if (district == "ndola") {
     
     n_district <- ceiling(451246 * g)
     historic_deaths <- historic_deaths %>%
-      filter(district == district) %>%
+      filter(district == "ndola") %>%
       select(!district)
     
   } else if (district == "solwezi") {
     
     n_district <- ceiling(332623 * g)
     historic_deaths <- historic_deaths %>%
-      filter(district == district) %>%
+      filter(district == "solwezi") %>%
       select(!district)
     
   } else {
     stop("District not supported for analysis")
   }
    
+  
   population$n <- round((population$n / sum(population$n)) * n_district) 
   
   historic_deaths <- infer_baseline_deaths(historic_deaths, date,
-                                           inflate = 1 / deaths_observed)
+                                           inflate = 1 / deaths_observed,
+                                           debug = FALSE)
   base_death_date <-
     ZamCovid:::numeric_date(historic_deaths$date)
   base_death_date[1] <- 0

@@ -20,11 +20,11 @@ add_parameter <- function(name, initial, min, max, proposal,
   
   parameters_info <- read_csv(info_filename) 
   
-  regions <- unique(parameters_info$region)
-  regions <- regions[!is.na(regions)]
+  districts <- unique(parameters_info$district)
+  districts <- districts[!is.na(districts)]
   
   new_par <- data.frame(
-    region = regions,
+    district = districts,
     name = name,
     initial = initial,
     min = min,
@@ -35,7 +35,7 @@ add_parameter <- function(name, initial, min, max, proposal,
   
   parameters_info <- rbind(parameters_info, new_par)
   parameters_info <- dplyr::arrange(parameters_info,
-                                    region, name)
+                                    district, name)
 
   write.csv(parameters_info, info_filename, row.names = FALSE)
   
@@ -54,7 +54,7 @@ add_parameter <- function(name, initial, min, max, proposal,
     for (i in regions) {
       
       avg_prop[i] <- parameters_proposal[
-        parameters_proposal$region == i &
+        parameters_proposal$district == i &
           parameters_proposal$name == proposal, proposal]
     }
     proposal = abs(mean(avg_prop))
@@ -63,7 +63,7 @@ add_parameter <- function(name, initial, min, max, proposal,
   new_prop[[name]] <- proposal
   
   parameters_proposal <- rbind(parameters_proposal, new_prop)
-  parameters_proposal <- dplyr::arrange(parameters_proposal, region, name)
+  parameters_proposal <- dplyr::arrange(parameters_proposal, district, name)
   col_order <- c(1, 2, 2 + order(names(parameters_proposal)[-c(1,2)]))
   parameters_proposal <- parameters_proposal[, col_order]
   
@@ -255,8 +255,8 @@ nudge_info <- function(region, pars, factor = NULL, value = NULL,
 }
 
 
-add_district <- function(name, source, assumptions = "central", model = "deterministic") {
-  
+add_district <- function(name, source, assumptions = "central",
+                         model = "deterministic") {
   
   dir <- "src/ZamCovid_parameters_multidistrict/pars"
   
@@ -283,4 +283,4 @@ add_district <- function(name, source, assumptions = "central", model = "determi
   
   parameters_proposal <- rbind(parameters_proposal, new_prop)
   write.csv(parameters_proposal, proposal_filename, row.names = FALSE)
-}  
+}
