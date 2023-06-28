@@ -14,21 +14,21 @@ env_keep <- c("root_dir", "short_run", "assumptions", "districts",
 # ---------------------------------
 
 
-## I. ZamCovid_parameters_multidistrict ----
+## I. ZamCovid_multidistrict_data -----
 
 # Develop
-orderly::orderly_develop_start("ZamCovid_parameters_multidistrict",
+orderly::orderly_develop_start("ZamCovid_multidistrict_data",
                                parameters = list(assumptions = assumptions,
                                                  deterministic = deterministic),
                                use_draft = "newer")
-setwd(paste0(root_dir, "ZamCovid_parameters_multidistrict"))
+setwd(paste0(root_dir, "ZamCovid_multidistrict_data"))
 file.edit("script.R")
 # tidy up
 orderly::orderly_develop_clean()
 rm(list = setdiff(ls(), env_keep))
 
 # Run
-orderly::orderly_run("ZamCovid_parameters_multidistrict",
+orderly::orderly_run("ZamCovid_multidistrict_data",
                      parameters = list(assumptions = assumptions,
                                        deterministic = deterministic),
                      use_draft = "newer")
@@ -37,16 +37,39 @@ rm(list = setdiff(ls(), env_keep))
 #----
 
 
-## II. ZamCovid_fits_multidistrict ----
+## II. ZamCovid_multidistrict_parameters ----
 
 # Develop
-orderly::orderly_develop_start("ZamCovid_fits_multidistrict",
+orderly::orderly_develop_start("ZamCovid_multidistrict_parameters",
+                               parameters = list(assumptions = assumptions,
+                                                 deterministic = deterministic),
+                               use_draft = "newer")
+setwd(paste0(root_dir, "ZamCovid_multidistrict_parameters"))
+file.edit("script.R")
+# tidy up
+orderly::orderly_develop_clean()
+rm(list = setdiff(ls(), env_keep))
+
+# Run
+orderly::orderly_run("ZamCovid_multidistrict_parameters",
+                     parameters = list(assumptions = assumptions,
+                                       deterministic = deterministic),
+                     use_draft = "newer")
+rm(list = setdiff(ls(), env_keep))
+
+#----
+
+
+## III. ZamCovid_multidistrict_fits ----
+
+# Develop
+orderly::orderly_develop_start("ZamCovid_multidistrict_fits",
                                parameters = list(district = "lusaka",
                                                  short_run = short_run,
                                                  assumptions = assumptions,
                                                  deterministic = deterministic),
                                use_draft = "newer")
-setwd(paste0(root_dir, "ZamCovid_fits_multidistrict"))
+setwd(paste0(root_dir, "ZamCovid_multidistrict_fits"))
 file.edit("script.R")
 # tidy up
 orderly::orderly_develop_clean()
@@ -54,7 +77,7 @@ rm(list = setdiff(ls(), env_keep))
 
 # Run
 lapply(districts,
-       function(r) orderly::orderly_run("ZamCovid_fits_multidistrict",
+       function(r) orderly::orderly_run("ZamCovid_multidistrict_fits",
                                         parameters = list(district = r,
                                                           short_run = short_run,
                                                           assumptions = assumptions,
@@ -65,7 +88,7 @@ rm(list = setdiff(ls(), env_keep))
 #----
 
 
-## III. ZamCovid_kabwe_sens_analysis_multidistrict ----
+## IV. ZamCovid_kabwe_sens_analysis_multidistrict ----
 
 # Develop
 orderly::orderly_develop_start("ZamCovid_kabwe_sens_analysis",
