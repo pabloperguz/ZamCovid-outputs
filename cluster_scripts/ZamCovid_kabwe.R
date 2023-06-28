@@ -22,39 +22,39 @@ env_keep <- c("root_dir", "short_run", "date", "assumptions",
 # ---------------------------------
 
 
-## 1. ZamCovid_data ----
+## 1. ZamCovid_kabwe_data ----
 
 # Develop
-orderly::orderly_develop_start("ZamCovid_data", use_draft = "newer")
-setwd(paste0(root_dir, "ZamCovid_data"))
+orderly::orderly_develop_start("ZamCovid_kabwe_data", use_draft = "newer")
+setwd(paste0(root_dir, "ZamCovid_kabwe_data"))
 file.edit("script.R")
 # tidy up
 orderly::orderly_develop_clean()
 rm(list = setdiff(ls(), env_keep))
 
 # Run
-orderly::orderly_run("ZamCovid_data", use_draft = "newer")
+orderly::orderly_run("ZamCovid_kabwe_data", use_draft = "newer")
 rm(list = setdiff(ls(), env_keep))
 
 #----
 
 
-## 2. ZamCovid_parameters ----
+## 2. ZamCovid_kabwe_parameters ----
 
 # Develop
 orderly::orderly_develop_start(
-  "ZamCovid_parameters",
+  "ZamCovid_kabwe_parameters",
   parameters = list(assumptions = assumptions, date = date,
                     deterministic = deterministic),
   use_draft = "newer")
-setwd(paste0(root_dir, "ZamCovid_parameters"))
+setwd(paste0(root_dir, "ZamCovid_kabwe_parameters"))
 file.edit("script.R")
 # Tidy up
 orderly::orderly_develop_clean()
 rm(list = setdiff(ls(), env_keep))
 
 # Run
-orderly::orderly_run("ZamCovid_parameters", parameters = list(
+orderly::orderly_run("ZamCovid_kabwe_parameters", parameters = list(
   assumptions = assumptions, date = date, deterministic = deterministic),
   use_draft = "newer")
 rm(list = setdiff(ls(), env_keep))
@@ -62,24 +62,24 @@ rm(list = setdiff(ls(), env_keep))
 #----
 
 
-## 3. ZamCovid_fits ----
+## 3. ZamCovid_kabwe_fits ----
 
 # Develop
-orderly::orderly_develop_start("ZamCovid_fits",
+orderly::orderly_develop_start("ZamCovid_kabwe_fits",
                                parameters = list(region = "kabwe",
                                                  date = date,
                                                  short_run = short_run,
                                                  assumptions = assumptions,
                                                  deterministic = deterministic),
                                use_draft = "newer")
-setwd(paste0(root_dir, "ZamCovid_fits"))
+setwd(paste0(root_dir, "ZamCovid_kabwe_fits"))
 file.edit("script.R")
 # tidy up
 orderly::orderly_develop_clean()
 rm(list = setdiff(ls(), env_keep))
 
 # Run
-orderly::orderly_run("ZamCovid_fits",
+orderly::orderly_run("ZamCovid_kabwe_fits",
                      parameters = list(region = "kabwe",
                                        date = date,
                                        short_run = short_run,
@@ -159,7 +159,7 @@ obj <- didehpc::queue_didehpc(ctx, config = cfg)
 #----
 
 
-fits <- obj$enqueue(orderly::orderly_run('ZamCovid_fits',
+fits <- obj$enqueue(orderly::orderly_run('ZamCovid_kabwe_fits',
                                          parameters = list(region = "kabwe",
                                                            date = "2021-09-30",
                                                            short_run = FALSE,
