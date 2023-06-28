@@ -82,32 +82,29 @@ plot_fit_traces <- function(samples) {
 }
 
 
-plot_serology <- function(samples, data, over15_only = FALSE) {
+plot_serology <- function(samples, data, which = NULL, labels = NULL) {
   
-  which <- c("all", "15_19", "20_29",
-             "30_39", "40_49", "50_plus")
+  if (is.null(which)) {
+    which <- c("all", "over15", "15_19", "20_29",
+               "30_39", "40_49", "50_plus")
+    labels <- c("All", "15 and older", "15 to 19",
+                "20 to 29", "30 to 39", "40 to 49",
+                "50 and older")
+  }
+  
   sero_cols <- grep("sero", colnames(data), value = TRUE)
   dates <- ZamCovid:::numeric_date_as_date(dat$fit$samples$trajectories$date)[-1]
   data <- data[, c("date", sero_cols)] %>%
     filter(as.Date(date) %in% dates)
   
-  values <- c("cadetblue", "darkgoldenrod3", "chartreuse4")
-  breaks <- c("Model", "Data (fitted)", "Data*")
-  labels <- c("All (15+ years)", "15 to 19",
-              "20 to 29", "30 to 39", "40 to 49",
-              "50 and older")
-  
-  if (over15_only) {
-    which <- which[1]
-    labels <- labels[1]
-  }
+  values <- c("cadetblue", "darkviolet","darkgoldenrod3", "chartreuse4")
+  breaks <- c("Seropositive", "Cumulative infected", "Data (fitted)", "Data (not fitted)")
+
   
   data_plot <- NULL
   for (w in which) {
     keep <- grep(w, colnames(data), value = TRUE)
-    if (w == "all") {w <- "over15"}
-    name <- paste0("sero_pos_", w)
-    tmp <- calc_seropos(data[, keep], dates, name)
+    tmp <- calc_seropos(data[, keep], dates, w)
     
     data_plot <- rbind(data_plot, tmp)
   }
@@ -119,55 +116,104 @@ plot_serology <- function(samples, data, over15_only = FALSE) {
   sens <- p$sero_sensitivity
   spec <- p$sero_specificity
   
-  which[1] <- "over15"
-  traj <- paste0("sero_pos_", which)
-  sero_pos <- samples$trajectories$state[traj, , ]
-  
-  dates_vect <- unique(data_plot$date)
   df <- NULL
-  for (t in traj) {
-    data_tmp <- data_plot %>%
-      filter(state == t)
-    n <- p[[paste0("N_tot_", gsub("sero_pos_", "", t))]]
-    sero_pos <- states[t, , -1]
-    tmp <- ((sens *  sero_pos + (1 - spec) * (n - sero_pos)) / n) - 0.01
-    ret <- traj_to_long(t, tmp, dates, data_tmp)
+  for (t in which) {
+    n <- p[[paste0("N_tot_", t)]]
+    sero_pos <- states[paste0("sero_pos_", t), , -1]
+    
+    tmp_sero <- ((sens *  sero_pos + (1 - spec) * (n - sero_pos)) / n) - 0.001
+    cum_inf <- get_cum_inf_age(states, t) / n
+    
+    ret_sero <- traj_to_long(t, tmp_sero, dates, rep(NA_real_, dim(tmp_sero)[2])) %>%
+      select(!data)
+    ret_cum_inf <- traj_to_long(t, cum_inf, dates, rep(NA_real_, dim(cum_inf)[2])) %>%
+      select(!data) %>%
+      rename(cum_inf_mean = mean, cum_inf_lb = lb, cum_inf_ub = ub)
+    
+    ret <- left_join(ret_sero, ret_cum_inf)
     df <- rbind(df, ret)
   }
- 
+  
   df <- left_join(df, data_plot) %>%
-    mutate(col = case_when(state == "sero_pos_over15" ~ "Data*",
+    mutate(col = case_when(state == "over15" ~ "Data (not fitted)",
                            TRUE ~ "Data (fitted)"))
   df$state <- factor(df$state, levels = unique(df$state), labels = labels)
   
-  p <- ggplot(df, aes(x = date)) +
-    geom_line(aes(y = mean, col = "Model")) +
-    geom_ribbon(aes(ymin = lb, ymax = ub, fill = "Model"), alpha = 0.4, show.legend = FALSE) +
+  p <- df %>% 
+    filter(state != "All") %>%
+    ggplot(., aes(x = date)) +
+    geom_line(aes(y = mean, col = "Seropositive")) +
+    geom_ribbon(aes(ymin = lb, ymax = ub, fill = "Seropositive"), alpha = 0.4, show.legend = FALSE) +
+    geom_line(aes(y = cum_inf_mean, col = "Cumulative infected")) +
+    geom_ribbon(aes(ymin = cum_inf_lb, ymax = cum_inf_ub, fill = "Cumulative infected"), alpha = 0.4, show.legend = FALSE) +
     geom_point(aes(y = data_mean, col = col), size = 0.9, alpha = 0.5) +
     geom_errorbar(aes(ymin = data_lb, ymax = data_ub, 
-                        col = col), linewidth = 0.3, alpha = 0.5) +
+                      col = col), linewidth = 0.3, alpha = 0.5) +
     scale_y_continuous(expand = c(0, 0),
                        limits = c(0, 1),
                        labels = scales::percent_format()) +
     scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
-    scale_color_manual(values = values, breaks = breaks) +
-    scale_fill_manual(values = values, breaks = breaks) +
-    facet_wrap(~state, scales = "free_y") +
-    labs(x = "", y = "", title = "Proportion sero-positive") +
+    facet_wrap(~state) +
+    labs(x = "", y = "Seropositivity by age") +
     theme_minimal() +
-    theme(legend.position = "none",
+    theme(legend.title = element_blank(),
+          legend.position = "top",
           axis.line = element_line(),
           axis.text.x = element_text(angle = 45, vjust = 0.7))
   
-  if (over15_only) {
+  if (length(unique(df$col)) == 2) {
+    
+    p <- p +
+      scale_color_manual(values = values, breaks = breaks,
+                         guide =
+                           guide_legend(override.aes = list(linetype = rep(1, 4),
+                                                            size = rep(2, 4),
+                                                            shape = c(NA, NA, 16, 16)))) +
+      scale_fill_manual(values = values, breaks = breaks)
+    
+  } else {
+    p <- p +
+      scale_color_manual(values = values, breaks = breaks) +
+      scale_fill_manual(values = values, breaks = breaks)
+    
+  }
+    
+  
+  if ("all" %in% which) {
+    
+    p_all <- df %>% 
+      filter(state == "All") %>%
+      ggplot(., aes(x = date)) +
+      geom_line(aes(y = mean, col = "Seropositive")) +
+      geom_ribbon(aes(ymin = lb, ymax = ub, fill = "Seropositive"), alpha = 0.4, show.legend = FALSE) +
+      geom_line(aes(y = cum_inf_mean, col = "Cumulative infected")) +
+      geom_ribbon(aes(ymin = cum_inf_lb, ymax = cum_inf_ub, fill = "Cumulative infected"), alpha = 0.4, show.legend = FALSE) +
+      geom_point(aes(y = data_mean, col = col), size = 0.9, alpha = 0.5) +
+      geom_errorbar(aes(ymin = data_lb, ymax = data_ub, 
+                        col = col), linewidth = 0.3, alpha = 0.5) +
+      scale_y_continuous(expand = c(0, 0),
+                         limits = c(0, 1),
+                         labels = scales::percent_format()) +
+      scale_x_date(date_breaks = "2 month", date_labels = "%b-%y") +
+      scale_color_manual(values = values, breaks = breaks) +
+      scale_fill_manual(values = values, breaks = breaks) +
+      labs(x = "", y = "% total population") +
+      theme_minimal() +
+      theme(legend.position = "none",
+            axis.line = element_line(),
+            axis.text.x = element_text(angle = 45, vjust = 0.7))
+  }
+  
+  if (length(which) == 1) {
     p + 
-      labs(y = "% sero-positive (15+ year-olds)", title = "") +
+      labs(y = paste0("% sero-positive (", labels,")"), title = "") +
       theme(strip.text = element_blank(),
             legend.title = element_blank(),
             legend.position = "right")
   } else {
-    p
+    p_all / p
   }
+  
 }
 
 
@@ -840,4 +886,46 @@ get_par_labels <- function(dat) {
               start_date = expression(t["seed"])
   )
   labels
+}
+
+
+get_cum_inf_age <- function(states, t) {
+  
+  stopifnot(t %in% c("all", "over15", "15_19", "20_29", "30_39",
+                     "40_49", "50_plus"))
+  
+  inf_nm <- grep("infections_inc_age_", rownames(states), value = TRUE)
+  reinf_nm <- grep("reinfections_inc_age_", rownames(states), value = TRUE)
+  inf_nm <- setdiff(inf_nm, reinf_nm)
+  
+  if (t == "over15") {
+    inf_nm <- inf_nm[4:length(inf_nm)]
+    reinf_nm <- reinf_nm[4:length(reinf_nm)]
+  } else if (t == "15_19") {
+    inf_nm <- inf_nm[4]
+    reinf_nm <- reinf_nm[4]
+  } else if (t == "20_29") {
+    inf_nm <- inf_nm[5:6]
+    reinf_nm <- reinf_nm[5:6]
+  } else if (t == "30_39") {
+    inf_nm <- inf_nm[7:8]
+    reinf_nm <- reinf_nm[7:8]
+  } else if (t == "40_49") {
+    inf_nm <- inf_nm[9:10]
+    reinf_nm <- reinf_nm[9:10]
+  } else if (t == "50_plus") {
+    inf_nm <- inf_nm[11:length(inf_nm)]
+    reinf_nm <- reinf_nm[11:length(reinf_nm)]
+  }
+  
+  inf <- states[inf_nm, , -1]
+  reinf <- states[reinf_nm, , -1]
+  
+  if (length(dim(inf)) == 3) {
+    inf <- apply(inf, c(2:3), sum)
+    reinf <- apply(reinf, c(2:3), sum)
+  }
+  
+  out <- inf - reinf
+  t(apply(out, 1, cumsum))
 }

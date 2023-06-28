@@ -1,4 +1,4 @@
-"date","sero_positive_15_19","sero_total_15_19","sero_positive_20_29","sero_total_20_29","sero_positive_30_39","sero_total_30_39","sero_positive_40_49","sero_total_40_49","sero_positive_50_plus","sero_total_50_plus","sero_positive_all","sero_total_all"
+"date","sero_pos_15_19","sero_tot_15_19","sero_pos_20_29","sero_tot_20_29","sero_pos_30_39","sero_tot_30_39","sero_pos_40_49","sero_tot_40_49","sero_pos_50_plus","sero_tot_50_plus","sero_pos_over15","sero_tot_over15"
 2020-11-18,2,39,9,74,6,29,5,19,4,31,26,192
 2020-11-25,7,58,5,55,3,36,3,23,3,28,21,200
 2020-12-02,1,88,5,102,0,53,1,38,2,35,9,316

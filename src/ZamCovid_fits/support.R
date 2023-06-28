@@ -143,10 +143,10 @@ set_control <- function(short_run, deterministic, n_particles = 192,
   }
   
   if (short_run) {
-    burnin <- min(100, burnin)
-    n_particles <- min(192, n_particles)
-    n_mcmc <- min(500, n_mcmc)
-    n_sample <- min(100, n_mcmc)
+    burnin <- min(20, burnin)
+    n_particles <- min(96, n_particles)
+    n_mcmc <- min(100, n_mcmc)
+    n_sample <- min(50, n_mcmc)
     n_chains <- min(4, n_chains)
   }
   
@@ -210,30 +210,29 @@ control_cores <- function() {
 
 
 parse_data <- function(dat, fit_sero = FALSE, fit_deaths = FALSE,
-                       fit_cases = FALSE, sero_by_age = FALSE,
-                       deaths_by_age = FALSE, cases_by_age = FALSE) {
+                       fit_pcr = FALSE, sero_by_age = FALSE,
+                       deaths_by_age = FALSE, pcr_by_age = FALSE) {
   
   # A bit of pre-processing to make sure minimum of expected columns are there
   sero_age_bands <- as.vector(
     outer(c("sero_pos_", "sero_tot_"),
           c("15_19", "20_29", "30_39", "40_49", "50_plus"),
           paste0))
-  cases_age_bands <- paste0(
-    "cases_", c("0_19", "20_29", "30_39", "40_49", "50_59", "60_plus"))
+  pcr_age_bands <- as.vector(
+    outer(c("pcr_pos_", "pcr_tot_"),
+          c("15_19", "20_29", "30_39", "40_49", "50_plus"),
+          paste0))
   deaths_age_bands <- paste0(
     "deaths_", c("0_14", "15_39", "40_59", "60_plus"))
   
   expected <- c("date", "date_string", "region",
-                "deaths_all", "sero_tot_over15",
-                "sero_pos_over15", "cases_all",
+                "deaths_all", "sero_tot_over15", "sero_tot_all",
+                "sero_pos_over15", "sero_pos_all", "pcr_pos_all",
+                "pcr_tot_all",
                 # Age-disaggregated columns
-                sero_age_bands, cases_age_bands, deaths_age_bands,
+                sero_age_bands, pcr_age_bands, deaths_age_bands,
                 # Some dummy columns - we might experiment with this later
                 "hosp_admissions", "deaths_hosp")
-  
-  colnames(dat) <- gsub("sero_positive", "sero_pos", colnames(dat))
-  colnames(dat) <- gsub("sero_total", "sero_tot", colnames(dat))
-  colnames(dat) <- gsub("pcr_positive", "cases", colnames(dat))
   
   dat$region <- region
   dat$date_string <- dat$date
@@ -253,6 +252,15 @@ parse_data <- function(dat, fit_sero = FALSE, fit_deaths = FALSE,
     if (sero_by_age) {
       stopifnot(!all(is.na(dat[, sero_age_bands])))
       dat[, c("sero_pos_over15", "sero_tot_over15")] <- NA_integer_
+      
+      dat <- dat %>%
+        mutate(sero_pos_all = case_when(
+          !is.na(sero_pos_50_plus) ~ NA_integer_,
+          TRUE ~ sero_pos_all)) %>%
+        mutate(sero_tot_all = case_when(
+          !is.na(sero_tot_50_plus) ~ NA_integer_,
+          TRUE ~ sero_tot_all))
+      
     } else {
       stopifnot(!all(is.na(dat$sero_pos_over15)) && !all(is.na(dat$sero_tot_over15)))
       dat[, sero_age_bands] <- NA_integer_
@@ -283,18 +291,24 @@ parse_data <- function(dat, fit_sero = FALSE, fit_deaths = FALSE,
   }
   
   
-  if (fit_cases) {
+  if (fit_pcr) {
     
-    if (cases_by_age) {
-      stopifnot(!all(is.na(dat[, cases_age_bands])))
-      dat$cases_all <- NA_integer_
+    if (pcr_by_age) {
+      stopifnot(!all(is.na(dat[, pcr_age_bands])))
+      dat <- dat %>%
+        mutate(pcr_pos_all = case_when(
+          !is.na(pcr_pos_50_plus) ~ NA_integer_,
+          TRUE ~ pcr_pos_all)) %>%
+        mutate(pcr_tot_all = case_when(
+          !is.na(pcr_tot_50_plus) ~ NA_integer_,
+          TRUE ~ pcr_tot_all))
     } else {
-      stopifnot(!all(is.na(dat$cases_all)))
-      dat[, cases_age_bands] <- NA_integer_
+      stopifnot(!all(is.na(dat$pcr_pos_all)) && !all(is.na(dat$pcr_tot_all)))
+      dat[, pcr_age_bands] <- NA_integer_
     }
     
   } else {
-    dat[, c("cases_all", cases_age_bands)] <- NA_integer_
+    dat[, c("pcr_pos_all", "pcr_tot_all", pcr_age_bands)] <- NA_integer_
   }
   
   # Final checks so data conforms to compare function
