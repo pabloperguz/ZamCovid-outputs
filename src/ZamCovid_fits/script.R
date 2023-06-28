@@ -68,8 +68,10 @@ dev.off()
 
 # Epidemics9 plot
 col1 <- (
-  (plot_serology(dat$fit$samples, data_full, over15_only = TRUE) +
-     theme(axis.text.x = element_blank())) /
+  (plot_serology(dat$fit$samples, data_full, which = "over15",
+                 labels = "15 and older") +
+     theme(legend.position = "right",
+           axis.text.x = element_blank())) /
     (plot_rt(dat) + theme(axis.text.x = element_blank())) /
     plot_infection_incidence(dat)) +
   plot_layout(heights = c(0.3, 0.3, 1))
