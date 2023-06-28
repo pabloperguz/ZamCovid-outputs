@@ -1,5 +1,5 @@
 source("util.R")
-version_check("ZamCovid", "0.1.0")
+version_check("ZamCovid", "0.1.1")
 
 
 ## 1. Prepare elements of particle filter
