@@ -1,5 +1,3 @@
-## Pipeline of tasks to run Kabwe analysis
-
 # pkgload::load_all("~/R_Projects/ZamCovid", export_all = FALSE)
 
 ## ---------------------------
@@ -8,82 +6,30 @@
 root_dir <- paste0(orderly::orderly_config()$root, "/src/")
 ## ---------------------------
 short_run <- TRUE
-date <- "2021-09-30"
 assumptions <- "central"
-## can be: central,
-##         fit_serology_only, fit_deaths_only,
-##         imm_waning_fast, imm_waning_slow,
-##         ifr_high, ifr_low,
-##         serorev_slow, serorev_fast
-##         sero_sens_low, sero_sens_high
+districts <- c("kabwe", "lusaka", "livingstone", "ndola", "solwezi")
 deterministic <- TRUE
-env_keep <- c("root_dir", "short_run", "date", "assumptions",
+env_keep <- c("root_dir", "short_run", "assumptions", "districts",
               "deterministic", "env_keep")
 # ---------------------------------
 
 
-## 1. ZamCovid_data ----
+## I. ZamCovid_parameters_multidistrict ----
 
 # Develop
-orderly::orderly_develop_start("ZamCovid_data", use_draft = "newer")
-setwd(paste0(root_dir, "ZamCovid_data"))
-file.edit("script.R")
-# tidy up
-orderly::orderly_develop_clean()
-rm(list = setdiff(ls(), env_keep))
-
-# Run
-orderly::orderly_run("ZamCovid_data", use_draft = "newer")
-rm(list = setdiff(ls(), env_keep))
-
-#----
-
-
-## 2. ZamCovid_parameters ----
-
-# Develop
-orderly::orderly_develop_start(
-  "ZamCovid_parameters",
-  parameters = list(assumptions = assumptions, date = date,
-                    deterministic = deterministic),
-  use_draft = "newer")
-setwd(paste0(root_dir, "ZamCovid_parameters"))
-file.edit("script.R")
-# Tidy up
-orderly::orderly_develop_clean()
-rm(list = setdiff(ls(), env_keep))
-
-# Run
-orderly::orderly_run("ZamCovid_parameters", parameters = list(
-  assumptions = assumptions, date = date, deterministic = deterministic),
-  use_draft = "newer")
-rm(list = setdiff(ls(), env_keep))
-
-#----
-
-
-## 3. ZamCovid_fits ----
-
-# Develop
-orderly::orderly_develop_start("ZamCovid_fits",
-                               parameters = list(region = "kabwe",
-                                                 date = date,
-                                                 short_run = short_run,
-                                                 assumptions = assumptions,
+orderly::orderly_develop_start("ZamCovid_parameters_multidistrict",
+                               parameters = list(assumptions = assumptions,
                                                  deterministic = deterministic),
                                use_draft = "newer")
-setwd(paste0(root_dir, "ZamCovid_fits"))
+setwd(paste0(root_dir, "ZamCovid_parameters_multidistrict"))
 file.edit("script.R")
 # tidy up
 orderly::orderly_develop_clean()
 rm(list = setdiff(ls(), env_keep))
 
 # Run
-orderly::orderly_run("ZamCovid_fits",
-                     parameters = list(region = "kabwe",
-                                       date = date,
-                                       short_run = short_run,
-                                       assumptions = assumptions,
+orderly::orderly_run("ZamCovid_parameters_multidistrict",
+                     parameters = list(assumptions = assumptions,
                                        deterministic = deterministic),
                      use_draft = "newer")
 rm(list = setdiff(ls(), env_keep))
@@ -91,7 +37,35 @@ rm(list = setdiff(ls(), env_keep))
 #----
 
 
-## 4. ZamCovid_kabwe_sens_analysis ----
+## II. ZamCovid_fits_multidistrict ----
+
+# Develop
+orderly::orderly_develop_start("ZamCovid_fits_multidistrict",
+                               parameters = list(district = "lusaka",
+                                                 short_run = short_run,
+                                                 assumptions = assumptions,
+                                                 deterministic = deterministic),
+                               use_draft = "newer")
+setwd(paste0(root_dir, "ZamCovid_fits_multidistrict"))
+file.edit("script.R")
+# tidy up
+orderly::orderly_develop_clean()
+rm(list = setdiff(ls(), env_keep))
+
+# Run
+lapply(districts,
+       function(r) orderly::orderly_run("ZamCovid_fits_multidistrict",
+                                        parameters = list(district = r,
+                                                          short_run = short_run,
+                                                          assumptions = assumptions,
+                                                          deterministic = deterministic),
+                                        use_draft = "newer"))
+rm(list = setdiff(ls(), env_keep))
+
+#----
+
+
+## III. ZamCovid_kabwe_sens_analysis_multidistrict ----
 
 # Develop
 orderly::orderly_develop_start("ZamCovid_kabwe_sens_analysis",
@@ -155,15 +129,21 @@ cfg <- didehpc::didehpc_config(cluster = "wpia-hn",
                                template = 'AllNodes',
                                cores = 8)
 obj <- didehpc::queue_didehpc(ctx, config = cfg)
+districts <- c("kabwe", "lusaka", "livingstone", "ndola", "solwezi")
 
 #----
 
+fits <- 
+  obj$lapply(X = districts,
+             FUN = function (x) {
+               orderly::orderly_run('ZamCovid_fits_multidistrict',
+                                    parameters = list(district = r,
+                                                      short_run = FALSE,
+                                                      deterministic = TRUE,
+                                                      assumptions = "central"),
+                                    use_draft = "newer")})
+batch <- fits$name
 
-fits <- obj$enqueue(orderly::orderly_run('ZamCovid_fits',
-                                         parameters = list(region = "kabwe",
-                                                           date = "2021-09-30",
-                                                           short_run = FALSE,
-                                                           deterministic = TRUE,
-                                                           assumptions = "central"),
-                                         use_draft = "newer"))
+res <- obj$task_bundle_get(batch)$results()
+
 fits_result <- fits$result()
