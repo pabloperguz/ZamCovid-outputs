@@ -1,17 +1,18 @@
 source("util.R")
-version_check("ZamCovid", "0.1.0")
+version_check("ZamCovid", "0.1.1")
 
-pkgload::load_all("~/R_Projects/ZamCovid", export_all = FALSE)
+# pkgload::load_all("~/R_Projects/ZamCovid", export_all = FALSE)
 ## 1. Prepare elements of particle filter
 pars <- fit_pars_load("inputs", district, assumptions,
                       short_run, deterministic)
+cull_date <- as.Date(pars$base$date)
 
 control <- set_control(short_run, deterministic)
 
 data_full <- read_csv("data/data_timeseries.csv")
 
 data_fit <- parse_data(data_full, district, fit_sero = TRUE, fit_deaths = TRUE,
-                       fit_cases = TRUE)
+                       fit_cases = FALSE)
 
 ## 2. Build particle filter and run pMCMC
 filter <- ZamCovid_particle_filter(data_fit, pars$mcmc,

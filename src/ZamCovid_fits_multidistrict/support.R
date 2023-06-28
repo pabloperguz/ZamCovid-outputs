@@ -143,10 +143,10 @@ set_control <- function(short_run, deterministic, n_particles = 192,
   }
   
   if (short_run) {
-    burnin <- min(100, burnin)
-    n_particles <- min(192, n_particles)
-    n_mcmc <- min(500, n_mcmc)
-    n_sample <- min(100, n_mcmc)
+    burnin <- min(20, burnin)
+    n_particles <- min(96, n_particles)
+    n_mcmc <- min(100, n_mcmc)
+    n_sample <- min(50, n_mcmc)
     n_chains <- min(4, n_chains)
   }
   
@@ -210,17 +210,12 @@ control_cores <- function() {
 
 
 parse_data <- function(dat, district, fit_sero = FALSE, fit_deaths = FALSE,
-                       fit_cases = FALSE, sero_by_age = FALSE,
-                       deaths_by_age = FALSE, cases_by_age = FALSE) {
-  
+                       fit_cases = FALSE, sero_by_age = FALSE, deaths_by_age = FALSE) {
+  # browser()
   # A bit of pre-processing to make sure minimum of expected columns are there
   sero_age_bands <- as.vector(
     outer(c("sero_pos_", "sero_tot_"),
           c("15_19", "20_29", "30_39", "40_49", "50_plus"),
-          paste0))
-  pcr_age_bands <- as.vector(
-    outer(c("pcr_pos_", "pcr_tot_"),
-          c("0_19", "20_29", "30_39", "40_49", "50_59", "60_plus"),
           paste0))
   deaths_age_bands <- paste0(
     "deaths_", c("0_14", "15_39", "40_59", "60_plus"))
@@ -230,14 +225,9 @@ parse_data <- function(dat, district, fit_sero = FALSE, fit_deaths = FALSE,
                 "sero_pos_all", "sero_pos_over15", "sero_tot_over15",
                 "pcr_pos_all", "pcr_tot_all",
                 # Age-disaggregated columns
-                sero_age_bands, pcr_age_bands, deaths_age_bands,
+                sero_age_bands, deaths_age_bands,
                 # Some dummy columns - we might experiment with this later
                 "hosp_admissions", "deaths_hosp")
-  
-  colnames(dat) <- gsub("sero_positive", "sero_pos", colnames(dat))
-  colnames(dat) <- gsub("sero_total", "sero_tot", colnames(dat))
-  colnames(dat) <- gsub("pcr_positive", "pcr_pos", colnames(dat))
-  colnames(dat) <- gsub("pcr_total", "pcr_tot", colnames(dat))
   
   dat$date_string <- dat$date
   dat$date <- ZamCovid:::numeric_date(dat$date)
@@ -247,7 +237,7 @@ parse_data <- function(dat, district, fit_sero = FALSE, fit_deaths = FALSE,
   dat <- dat[, expected]
   
   dat <- dat[dat$district == district, ]
-  dat <- dat[as.Date(dat$date_string) <= as.Date(date), ]
+  dat <- dat[as.Date(dat$date_string) <= as.Date(cull_date), ]
   
   # Now check which data we are fitting to and avoid double-fitting to
   # age-disaggregated and aggregated data
@@ -287,18 +277,11 @@ parse_data <- function(dat, district, fit_sero = FALSE, fit_deaths = FALSE,
   
   
   if (fit_cases) {
-    
-    if (cases_by_age) {
-      stopifnot(!all(is.na(dat[, pcr_age_bands])))
-      dat$pcr_tot_all <- NA_integer_
-      dat$pcr_pos_all <- NA_integer_
-    } else {
-      stopifnot(!all(is.na(dat$pcr_tot_all)) && !all(is.na(dat$pcr_pos_all)))
-      dat[, pcr_age_bands] <- NA_integer_
-    }
+  
+    stopifnot(!all(is.na(dat$pcr_tot_all)) && !all(is.na(dat$pcr_pos_all)))
     
   } else {
-    dat[, c("cases_all", pcr_age_bands)] <- NA_integer_
+    dat[, c("pcr_pos_all", "pcr_tot_all")] <- NA_integer_
   }
   
   # Final checks so data conforms to compare function

@@ -1,6 +1,6 @@
 source("util.R")
 
-version_check("ZamCovid", "0.1.0")
+version_check("ZamCovid", "0.1.1")
 
 data_multidistrict <- read_csv("data/data_multidistrict.csv")
 districts <- unique(data_multidistrict$district)
