@@ -2,9 +2,10 @@ source("util.R")
 
 version_check("ZamCovid", "0.1.1")
 
-data_multidistrict <- read_csv("data/data_multidistrict.csv")
+data <- readRDS("data/data_timeseries.rds")
+data_multidistrict <- data$data
 districts <- unique(data_multidistrict$district)
-date <- "2020-09-30"
+date <- max(data_multidistrict$date)
 
 ## Cap data and save for use in the fitting task
 stopifnot(max(data_multidistrict$date) >= as.Date(date))

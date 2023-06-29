@@ -1,11 +1,11 @@
 
-create_baseline <- function(district, date, pars, assumptions) {
+create_baseline <- function(distr, date, pars, assumptions) {
   
   pars_info <- pars$info
   pars_vcv <- pars$proposal
   
-  message(sprintf("Creating baseline for '%s'", district))
-  pars_info <- pars_info[pars_info$district == district | is.na(pars_info$district), ]
+  message(sprintf("Creating baseline for '%s'", distr))
+  pars_info <- pars_info[pars_info$district == distr | is.na(pars_info$district), ]
   pars_info <- setNames(pars_info$initial, pars_info$name)
   
   # Beta change points - A vector of date (strings) for the beta parameters.
@@ -40,7 +40,11 @@ create_baseline <- function(district, date, pars, assumptions) {
   progression_data <- read_csv("data/progression_data.csv")
   severity_data <- read_csv("data/support_severity.csv")
   population <- read_csv("data/population.csv")
-  historic_deaths <- read_csv("data/historic_deaths.csv")
+  historic_deaths <- data$historic %>%
+    pivot_longer(!c(district, month), names_to = "year", values_to = "deaths") %>%
+    mutate(year = as.integer(year)) %>%
+    filter(district == distr) %>%
+    select(!district)
   
   ## 3. Calculate district population and baseline deaths ----
   
@@ -51,52 +55,38 @@ create_baseline <- function(district, date, pars, assumptions) {
   
   # For baseline deaths, we will use historic timeseries to infer a daily
   # baseline mortality rate (neg-binomial). We don't know how under-reported
-  # these may be, but we know they are. A crude estimation is that only 0.567
-  # historic deaths are observed, comparing timeseries to linelist in early 2020
-  # (the latter we will assume is 100% reported, albeit this is also not true!).
+  # these may be, but we know they are. Below are crude estimates adjusted for
+  # historic deaths projections compared to aggregated timeseries in early 2020.
+  # Note we are assuming the latter is 100% reported, albeit this is also not true!
   
-  deaths_observed <- 0.567
   n_zambia <- 19610769
   g <-  n_zambia / sum(population$n)
   
-  historic_deaths <- historic_deaths %>%
-    pivot_longer(!c(district, month), names_to = "year", values_to = "deaths") %>%
-    mutate(year = as.integer(year))
   
-  if (district == "kabwe") {
+  if (distr == "kabwe") {
     
     n_district <- ceiling(230802 * g)
-    historic_deaths <- historic_deaths %>%
-      filter(district == "kabwe") %>%
-      select(!district)
+    deaths_observed <- 0.567
     
-  } else if (district == "lusaka") {
+  } else if (distr == "lusaka") {
     
     n_district <- ceiling(3041789)
-    historic_deaths <- historic_deaths %>%
-      filter(district == "lusaka") %>%
-      select(!district)
+    deaths_observed <- 1.72
     
-  } else if (district == "livingstone") {
+  } else if (distr == "livingstone") {
     
     n_district <- ceiling(177393)
-    historic_deaths <- historic_deaths %>%
-      filter(district == "livingstone") %>%
-      select(!district)
+    deaths_observed <- 1.33
     
-  } else if (district == "ndola") {
+  } else if (distr == "ndola") {
     
     n_district <- ceiling(451246 * g)
-    historic_deaths <- historic_deaths %>%
-      filter(district == "ndola") %>%
-      select(!district)
+    deaths_observed <- 1.2
     
-  } else if (district == "solwezi") {
+  } else if (distr == "solwezi") {
     
     n_district <- ceiling(332623 * g)
-    historic_deaths <- historic_deaths %>%
-      filter(district == "solwezi") %>%
-      select(!district)
+    deaths_observed <- 2
     
   } else {
     stop("District not supported for analysis")
@@ -108,6 +98,7 @@ create_baseline <- function(district, date, pars, assumptions) {
   historic_deaths <- infer_baseline_deaths(historic_deaths, date,
                                            inflate = 1 / deaths_observed,
                                            debug = FALSE)
+
   base_death_date <-
     ZamCovid:::numeric_date(historic_deaths$date)
   base_death_date[1] <- 0
@@ -319,7 +310,7 @@ create_baseline <- function(district, date, pars, assumptions) {
   
   ret <- list(
     date = date,
-    region = district,
+    region = distr,
     population = population,
     
     beta_date = ZamCovid:::numeric_date(beta_date),

@@ -80,7 +80,7 @@ infer_baseline_deaths <- function(historic, date, alpha = 0.95,
     p2 <- ggplot(dat, aes(x = year, y = deaths)) +
       geom_point() +
       scale_x_continuous(breaks = c(2017:2019)) +
-      scale_y_continuous(expand = c(0, 0), limits = c(100, 250)) +
+      scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
       stat_smooth(method = "lm") +
       theme_minimal() +
       theme(axis.line = element_line())
