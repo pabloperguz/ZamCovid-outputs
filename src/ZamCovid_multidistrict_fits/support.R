@@ -266,14 +266,14 @@ parse_data <- function(dat, district, fit_sero = FALSE, fit_deaths = FALSE,
       dat[, deaths_age_bands] <- NA_integer_
     }
     
-    ## NA deaths data in early 2020 to avoid inferring an earlier than
-    ## expected start to the epidemic
-    dat[as.Date(dat$date_string) < as.Date("2020-03-15"),
-        c("deaths_all", deaths_age_bands)] <- NA_integer_
-    
   } else {
     dat[, c("deaths_all", deaths_age_bands)] <- NA_integer_
   }
+  
+  # We'll ignore deaths before 2020-03-15 to avoid inferring a much to earlier
+  # seeding of the epidemic
+  death_cols <- grep("deaths", colnames(dat), value = TRUE)
+  dat[as.Date(dat$date_string) < as.Date("2020-03-15"), death_cols] <- NA_integer_
   
   
   if (fit_cases) {

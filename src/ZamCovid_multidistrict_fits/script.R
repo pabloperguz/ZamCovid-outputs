@@ -36,12 +36,13 @@ message("Creating plots")
 
 ## 4. Plot fitted trajectories ----
 sero <- plot_serology(dat, data_fit, all = TRUE, 0.4)
-pcr <- plot_pcr_positivity(dat, data_fit, all = TRUE, 0.2) +
-  theme(axis.text.x = element_blank())
+# pcr <- plot_pcr_positivity(dat, data_fit, all = TRUE, 0.2) +
+#   theme(axis.text.x = element_blank())
 deaths <- plot_deaths(dat, data_fit)
 
 png("plots/fits.png", units = "in", width = 6, height = 8, res = 300)
-(pcr / sero) | deaths
+(sero / deaths) +
+  plot_annotation(title = paste0("Data fits for ", stringr::str_to_title(district)))# (pcr / sero) | deaths
 dev.off()
 
 png("plots/inferred.png", units = "in", width = 6, height = 8, res = 300)

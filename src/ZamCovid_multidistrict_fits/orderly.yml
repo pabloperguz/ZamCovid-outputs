@@ -10,16 +10,12 @@ parameters:
       default: "central"
 
 artefacts:
-  - data:
-      description: summarised fit results
-      filenames:
-        - fit_results.html
   - staticgraph:
       description: pMCMC trace plots and fitted trajectories
       filenames:
         - plots/traceplots.png
         - plots/fits.png
-        - plot/inferred.png
+        - plots/inferred.png
   - data:
       description: PMCMC results for analysis
       filenames:
@@ -43,7 +39,7 @@ packages:
   - patchwork
 
 depends:
-  ZamCovid_parameters_multidistrict:
+  ZamCovid_multidistrict_parameters:
     id: latest(parameter:assumptions == assumptions && deterministic == deterministic)
     use:
       inputs/base.rds: parameters_base.rds
