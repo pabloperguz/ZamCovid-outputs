@@ -18,8 +18,6 @@ env_keep <- c("root_dir", "short_run", "assumptions", "districts",
 
 # Develop
 orderly::orderly_develop_start("ZamCovid_multidistrict_data",
-                               parameters = list(assumptions = assumptions,
-                                                 deterministic = deterministic),
                                use_draft = "newer")
 setwd(paste0(root_dir, "ZamCovid_multidistrict_data"))
 file.edit("script.R")
@@ -29,8 +27,6 @@ rm(list = setdiff(ls(), env_keep))
 
 # Run
 orderly::orderly_run("ZamCovid_multidistrict_data",
-                     parameters = list(assumptions = assumptions,
-                                       deterministic = deterministic),
                      use_draft = "newer")
 rm(list = setdiff(ls(), env_keep))
 
