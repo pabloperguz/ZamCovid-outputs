@@ -1,6 +1,6 @@
 source("util.R")
 
-version_check("ZamCovid", "0.1.0")
+version_check("ZamCovid", "0.1.1")
 
 ## Define date at which the data is capped for analysis
 date <- date

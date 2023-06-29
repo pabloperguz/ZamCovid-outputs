@@ -34,47 +34,47 @@ packages:
   - patchwork
 
 depends:
- - ZamCovid_fits:
+ - ZamCovid_kabwe_fits:
      id: latest(parameter:assumptions == "central" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
      use:
         fits/central_fits.rds: outputs/fit.rds
- - ZamCovid_fits:
+ - ZamCovid_kabwe_fits:
      id: latest(parameter:assumptions == "fit_deaths_only" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
      use:
         fits/fit_deaths_only_fits.rds: outputs/fit.rds
- - ZamCovid_fits:
+ - ZamCovid_kabwe_fits:
      id: latest(parameter:assumptions == "fit_serology_only" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
      use:
         fits/fit_serology_only_fits.rds: outputs/fit.rds
- - ZamCovid_fits:
+ - ZamCovid_kabwe_fits:
      id: latest(parameter:assumptions == "ifr_high" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
      use:
         fits/ifr_high_fits.rds: outputs/fit.rds
- - ZamCovid_fits:
+ - ZamCovid_kabwe_fits:
      id: latest(parameter:assumptions == "ifr_low" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
      use:
         fits/ifr_low_fits.rds: outputs/fit.rds
- - ZamCovid_fits:
+ - ZamCovid_kabwe_fits:
      id: latest(parameter:assumptions == "imm_waning_fast" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
      use:
         fits/imm_waning_fast_fits.rds: outputs/fit.rds
- - ZamCovid_fits:
+ - ZamCovid_kabwe_fits:
      id: latest(parameter:assumptions == "imm_waning_slow" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
      use:
         fits/imm_waning_slow_fits.rds: outputs/fit.rds
- - ZamCovid_fits:
+ - ZamCovid_kabwe_fits:
      id: latest(parameter:assumptions == "serorev_fast" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
      use:
         fits/serorev_fast_fits.rds: outputs/fit.rds
- - ZamCovid_fits:
+ - ZamCovid_kabwe_fits:
      id: latest(parameter:assumptions == "serorev_slow" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
      use:
         fits/serorev_slow_fits.rds: outputs/fit.rds
- - ZamCovid_fits:
+ - ZamCovid_kabwe_fits:
      id: latest(parameter:assumptions == "sero_sens_low" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
      use:
         fits/sero_sens_low_fits.rds: outputs/fit.rds
- - ZamCovid_fits:
+ - ZamCovid_kabwe_fits:
      id: latest(parameter:assumptions == "sero_sens_high" && parameter:date == date && parameter:deterministic == deterministic && parameter:short_run == short_run && parameter:region == "kabwe")
      use:
         fits/sero_sens_high_fits.rds: outputs/fit.rds

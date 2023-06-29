@@ -53,7 +53,7 @@ resources:
   - historic_deaths.Rmd
   
 depends:
-  ZamCovid_data:
+  ZamCovid_kabwe_data:
     id: latest
     use:
       data/data_timeseries.rds: data_timeseries.rds

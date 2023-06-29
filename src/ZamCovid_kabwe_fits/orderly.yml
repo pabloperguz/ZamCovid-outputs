@@ -53,7 +53,7 @@ packages:
   - patchwork
 
 depends:
-  ZamCovid_parameters:
+  ZamCovid_kabwe_parameters:
     id: latest(parameter:assumptions == assumptions && date == date && deterministic == deterministic)
     use:
       inputs/base.rds: parameters_base.rds
