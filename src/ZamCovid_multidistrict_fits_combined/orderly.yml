@@ -1,0 +1,118 @@
+script: script.R
+
+parameters:
+  short_run:
+    default: false
+  deterministic:
+    default: false
+  assumptions:
+      default: "central"
+
+artefacts:
+
+  - data:
+      description: Files for external reviews
+      filenames:
+        - outputs/parameters/proposal.csv
+        - outputs/parameters/prior.csv
+        - outputs/parameters/info.csv
+        - outputs/Rt.rds
+        - outputs/aggregated_data.rds
+        - outputs/severity.csv
+
+  - data:
+      description: Files for forward simulation
+      filenames:
+        - outputs/combined.rds
+
+  - staticgraph:
+      description: regional fitting plots and projections for comparison
+      filenames:
+        - figs/Rt_beta.png
+        - figs/cumulative_attack_rate.png
+        - figs/data_fits.png
+        - figs/forest_plot_betas.png
+        - figs/forest_plot_misc.png
+        - figs/incidence.png
+        - figs/status_effective_susceptible.png
+        - figs/status_infection.png
+        - figs/deaths_covid_vs_non.png
+        - figs/outcomes_by_age.png
+
+        # Manuscript plots
+        - figs/manuscript_figure_1.pdf
+        - figs/manuscript_figure_2.pdf
+        - figs/suppl_outcomes_demography.png
+
+packages:
+  - ZamCovid
+  - dplyr
+  - tidyr
+  - ggplot2
+  - data.table
+  - jtools
+  - patchwork
+  - reshape2
+  - DescTools
+  - ggrepel
+  - stringr
+  - lubridate
+  - ggtext
+  - car
+  - Hmisc
+  - stringr
+
+sources:
+  - R/plot.R
+  - R/support.R
+
+resources:
+  - manuscript_numbers.Rmd
+
+global_resources:
+  util.R: util.R
+
+depends:
+ - ZamCovid_multidistrict_fits:
+     id: latest(parameter:district == "kabwe" && parameter:assumptions == assumptions && parameter:short_run == short_run && parameter:deterministic == deterministic)
+     use:
+        regional_results/kabwe/fit.rds: outputs/fit.rds
+        regional_results/kabwe/info.csv: outputs/info.csv
+        regional_results/kabwe/proposal.csv: outputs/proposal.csv
+        figs/traceplot_kabwe.png: plots/traceplots.png
+ - ZamCovid_multidistrict_fits:
+     id: latest(parameter:district == "lusaka" && parameter:assumptions == assumptions && parameter:short_run == short_run && parameter:deterministic == deterministic)
+     use:
+        regional_results/lusaka/fit.rds: outputs/fit.rds
+        regional_results/lusaka/info.csv: outputs/info.csv
+        regional_results/lusaka/proposal.csv: outputs/proposal.csv
+        figs/traceplot_lusaka.png: plots/traceplots.png
+ - ZamCovid_multidistrict_fits:
+     id: latest(parameter:district == "livingstone" && parameter:assumptions == assumptions && parameter:short_run == short_run && parameter:deterministic == deterministic)
+     use:
+        regional_results/livingstone/fit.rds: outputs/fit.rds
+        regional_results/livingstone/info.csv: outputs/info.csv
+        regional_results/livingstone/proposal.csv: outputs/proposal.csv
+        figs/traceplot_livingstone.png: plots/traceplots.png
+ - ZamCovid_multidistrict_fits:
+     id: latest(parameter:district == "ndola" && parameter:assumptions == assumptions && parameter:short_run == short_run && parameter:deterministic == deterministic)
+     use:
+        regional_results/ndola/fit.rds: outputs/fit.rds
+        regional_results/ndola/info.csv: outputs/info.csv
+        regional_results/ndola/proposal.csv: outputs/proposal.csv
+        figs/traceplot_ndola.png: plots/traceplots.png
+ - ZamCovid_multidistrict_fits:
+     id: latest(parameter:district == "solwezi" && parameter:assumptions == assumptions && parameter:short_run == short_run && parameter:deterministic == deterministic)
+     use:
+        regional_results/solwezi/fit.rds: outputs/fit.rds
+        regional_results/solwezi/info.csv: outputs/info.csv
+        regional_results/solwezi/proposal.csv: outputs/proposal.csv
+        figs/traceplot_solwezi.png: plots/traceplots.png
+
+ - ZamCovid_multidistrict_parameters:
+     id: latest(parameter:assumptions == assumptions && deterministic == deterministic)
+     use:
+        data/data_timeseries.csv: data_multidistrict.csv
+
+requester: ZamCovid
+author: Pablo

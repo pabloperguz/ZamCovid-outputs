@@ -84,25 +84,25 @@ rm(list = setdiff(ls(), env_keep))
 #----
 
 
-## IV. ZamCovid_kabwe_sens_analysis_multidistrict ----
+## IV. ZamCovid_multidistrict_fits_combined ----
 
 # Develop
-orderly::orderly_develop_start("ZamCovid_kabwe_sens_analysis",
-                               parameters = list(date = date,
-                                                 short_run = short_run,
-                                                 deterministic = deterministic),
+orderly::orderly_develop_start("ZamCovid_multidistrict_fits_combined",
+                               parameters = list(short_run = short_run,
+                                                 deterministic = deterministic,
+                                                 assumptions = assumptions),
                                use_draft = "newer")
-setwd(paste0(root_dir, "ZamCovid_kabwe_sens_analysis"))
+setwd(paste0(root_dir, "ZamCovid_multidistrict_fits_combined"))
 file.edit("script.R")
 # tidy up
 orderly::orderly_develop_clean()
 rm(list = setdiff(ls(), env_keep))
 
 # Run
-orderly::orderly_run("ZamCovid_kabwe_sens_analysis",
-                     parameters = list(date = date,
-                                       short_run = short_run,
-                                       deterministic = deterministic),
+orderly::orderly_run("ZamCovid_multidistrict_fits_combined",
+                     parameters = list(short_run = short_run,
+                                       deterministic = deterministic,
+                                       assumptions = assumptions),
                      use_draft = "newer")
 rm(list = setdiff(ls(), env_keep))
 
