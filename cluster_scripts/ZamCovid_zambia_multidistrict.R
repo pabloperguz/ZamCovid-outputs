@@ -144,8 +144,8 @@ src <- conan::conan_sources(NULL,
 ctx <- context::context_save("contexts",
                              packages = packages,
                              package_sources = src)
-cfg <- didehpc::didehpc_config(cluster = "wpia-hn",
-                               template = 'AllNodes',
+cfg <- didehpc::didehpc_config(cluster = "fi--didemrchnb",
+                               template = '32Core',
                                cores = 8)
 obj <- didehpc::queue_didehpc(ctx, config = cfg)
 districts <- c("kabwe", "lusaka", "livingstone", "ndola", "solwezi")
@@ -155,8 +155,8 @@ districts <- c("kabwe", "lusaka", "livingstone", "ndola", "solwezi")
 fits <- 
   obj$lapply(X = districts,
              FUN = function (x) {
-               orderly::orderly_run('ZamCovid_fits_multidistrict',
-                                    parameters = list(district = r,
+               orderly::orderly_run('ZamCovid_multidistrict_fits',
+                                    parameters = list(district = x,
                                                       short_run = FALSE,
                                                       deterministic = TRUE,
                                                       assumptions = "central"),
@@ -164,5 +164,3 @@ fits <-
 batch <- fits$name
 
 res <- obj$task_bundle_get(batch)$results()
-
-fits_result <- fits$result()
